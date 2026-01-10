@@ -1,5 +1,5 @@
-# python-template
+# LLM Bias Testing
 
-Simple template for python projects
+A simple repo for the analysis of bias on LLMs
 
-Python 3.11 initialised with uv by default with `ruff` and `numpy`
+Example: Gender in CV Screening
