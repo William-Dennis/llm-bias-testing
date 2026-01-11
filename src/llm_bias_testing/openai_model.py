@@ -1,13 +1,22 @@
 """OpenAI model interface."""
 from openai import OpenAI
-from keys import OPENAI_API_KEY
 
 
 class Model:
     """OpenAI model wrapper."""
 
-    def __init__(self, model_name: str = "gpt-3.5-turbo", api_key: str = OPENAI_API_KEY):
+    def __init__(self, model_name: str = "gpt-3.5-turbo", api_key: str = None):
         self.model_name = model_name
+        
+        if api_key is None:
+            try:
+                from keys import OPENAI_API_KEY
+                api_key = OPENAI_API_KEY
+            except ImportError as e:
+                raise ImportError(
+                    "keys.py not found. Copy keys.py.example to keys.py and add your API keys."
+                ) from e
+        
         self.client = OpenAI(api_key=api_key)
 
     def predict(self, input_text: str, temperature: float = 0.0) -> str:
