@@ -78,6 +78,9 @@ class Model:
             messages=[{"role": "user", "content": input_text}],
             temperature=temperature,
         )
-        if not response.choices or len(response.choices) == 0:
+        if not response.choices:
             raise ValueError("OpenAI returned no response choices")
-        return response.choices[0].message.content
+        content = response.choices[0].message.content
+        if content is None:
+            raise ValueError("OpenAI returned None for message content")
+        return content
