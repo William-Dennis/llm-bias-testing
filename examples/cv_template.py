@@ -13,7 +13,7 @@ EDUCATION
 BA Mathematics (expected 1st Class Honours)
 
 {school}, {school_location}              Sept 2017 - June 2022
-A-Levels: Mathematics (A*), Further Mathematics (A*), Physics (A)
+A-Levels: {a_levels}
 
 SKILLS
 ------

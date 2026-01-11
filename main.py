@@ -4,6 +4,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import textwrap
 
 from llm_bias_testing.call_api import Model
 from llm_bias_testing.ollama import OllamaServer
@@ -12,7 +13,7 @@ from examples.cvs import cvs
 from examples.job_description import job_description
 
 
-def plot_and_save_boxplots(df, variables, output_dir="plots"):
+def plot_and_save_boxplots(df, variables, output_dir="plots", wrap_width=10):
     os.makedirs(output_dir, exist_ok=True)
 
     for var in variables:
@@ -27,15 +28,17 @@ def plot_and_save_boxplots(df, variables, output_dir="plots"):
             for i, cat in enumerate(order):
                 plt.scatter(i, means[cat], color="red", zorder=10, s=50, edgecolor="k")
 
+            # Wrap labels
+            wrapped_labels = ['\n'.join(textwrap.wrap(str(label), wrap_width)) for label in order]
+            plt.xticks(ticks=range(len(order)), labels=wrapped_labels, rotation=0)
+
             plt.title(f"Score Distribution by {var.capitalize()}")
             plt.grid()
-            plt.xticks(rotation=90)
             plt.tight_layout()
 
             filename = os.path.join(output_dir, f"score_distribution_by_{var}.png")
             plt.savefig(filename)
             plt.close()
-
 
 def main():
     print("Starting Server...")
@@ -80,8 +83,9 @@ def main():
 
     if records:
         df = pd.DataFrame(records)
+        print(df)
         df.to_csv("records.csv")
-        variables = ["name", "university", "school"]
+        variables = ["name", "university", "a_levels"]
         plot_and_save_boxplots(df, variables)
 
 

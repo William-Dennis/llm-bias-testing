@@ -66,18 +66,24 @@ companies = [
     "Insight Analytics",
 ]
 
+a_levels = [
+    "Mathematics (A*), Further Mathematics (A*), Physics (A)",
+    "Mathematics (A), Further Mathematics (A), Physics (B)"
+]
+
 # Cartesian product of all lists
 combinations = itertools.product(
-    names, universities, schools, ["UK"], ["Data Solutions"]
+    names, universities, ["Redfield Secondary"], ["UK"], ["Data Solutions"], a_levels
 )
 
 cvs = []
-for name, uni, school, location, company in combinations:
+for name, uni, school, location, company, a_levels in combinations:
     data = {
         "name": name,
         "university": uni,
         "school": school,
         "school_location": location,
         "company": company,
+        "a_levels": a_levels,
     }
     cvs.append({"cv": cv_template.format(**data), "metadata": data})
