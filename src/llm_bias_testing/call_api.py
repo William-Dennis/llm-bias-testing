@@ -3,7 +3,6 @@ from openai import OpenAI
 
 from llm_bias_testing.ollama_setup import OllamaServer
 from llm_bias_testing.transformers import Model as TransformerModel
-from keys import OPENAI_API_KEY
 
 LLM_MODEL = "gemma3:1b-it-qat"
 PROVIDER = "ollama"
@@ -49,6 +48,12 @@ class Model:
 
     def setup_openai(self):
         """Initialize OpenAI client."""
+        try:
+            from keys import OPENAI_API_KEY
+        except ImportError as e:
+            raise ImportError(
+                "keys.py not found. Copy keys.py.example to keys.py and add your API keys."
+            ) from e
         self.client = OpenAI(api_key=OPENAI_API_KEY)
 
     def predict_transformers(self, input_text: str, temperature: float = 0.0):
@@ -73,4 +78,6 @@ class Model:
             messages=[{"role": "user", "content": input_text}],
             temperature=temperature,
         )
+        if not response.choices or len(response.choices) == 0:
+            raise ValueError("OpenAI returned no response choices")
         return response.choices[0].message.content
