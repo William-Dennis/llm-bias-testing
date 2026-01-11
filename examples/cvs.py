@@ -75,7 +75,7 @@ a_levels = [
 
 # Cartesian product of all lists
 combinations = itertools.product(
-    names, universities, ["Redfield Secondary"], ["UK"], ["Data Solutions"], a_levels
+    names, universities, ["Redfield Secondary"], ["England", "Scotland", "Wales"], ["Data Solutions"], a_levels
 )
 
 cvs = []
