@@ -1,5 +1,5 @@
 job_description = """
-Job Title: Junior Data Analyst – Advanced Mathematical Modelling
+Job Title: Junior Data Analyst - Advanced Mathematical Modelling
 
 Location: Remote / UK-based
 

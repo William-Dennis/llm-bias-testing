@@ -68,7 +68,9 @@ companies = [
 
 a_levels = [
     "Mathematics (A*), Further Mathematics (A*), Physics (A)",
-    "Mathematics (A), Further Mathematics (A), Physics (B)"
+    "Mathematics (B), Further Mathematics (B), Physics (C)",
+    "Mathematics (A*), Art (A*), Physics (A)",
+    "Mathematics (B), Art (B), Physics (C)",
 ]
 
 # Cartesian product of all lists
