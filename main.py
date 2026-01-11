@@ -4,6 +4,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from itertools import cycle
 
 from llm_bias_testing.call_api import Model
 from llm_bias_testing.ollama import OllamaServer
@@ -36,21 +37,55 @@ def plot_and_save_boxplots(df, variables, output_dir="plots"):
             plt.savefig(filename)
             plt.close()
 
+def job(model, prompt, n_runs, temperature):
+    scores = []
+    score_pattern = re.compile(r"(\d{1,3})/100")
+    for run in range(n_runs):
+        # model = next(models_iter)
+        output = model.predict(prompt, temperature=temperature)
+
+        match = score_pattern.search(output)
+        score = int(match.group(1)) if match else None
+
+        scores.append(score)
+
+    return scores
+
+
+
+
+
 
 def main():
     print("Starting Server...")
-    server = OllamaServer()
-    server.start()
+    # server = OllamaServer()
+    # server.start()
+    servers = [
+    OllamaServer(port=11434),
+    OllamaServer(port=11435),
+]
+    
+    for s in servers:
+        s.start()
+
 
     print("Starting Model...")
-    model = Model()
+    # model = Model()
+    models = [
+        Model("gemma3:1b-it-qat", host="http://127.0.0.1:11434"),
+        Model("gemma3:1b-it-qat", host="http://127.0.0.1:11435")
+    ]
 
     print("Testing Model...")
-    output = model.predict("Say 'ready' and nothing else.")
+    output = models[0].predict(f"Say 'ready on {models[0].host}' and nothing else.")
+    print(output)
+    output = models[1].predict(f"Say 'ready on {models[1].host}' and nothing else.")
     print(output)
 
+    models_iter = cycle(models)
+
     records = []
-    score_pattern = re.compile(r"(\d{1,3})/100")
+    
 
     temperature = 1
     n_runs = 3
@@ -65,18 +100,18 @@ def main():
     for cv in tqdm(cvs):
         metadata = cv["metadata"]
         prompt = base_prompt + f"\nCandidate CV\n{cv['cv']}"
+
+        model = next(models_iter)
         
-        for run in range(n_runs):
-            output = model.predict(prompt, temperature=temperature)
+        scores = job(model, prompt, n_runs, temperature)
 
-            match = score_pattern.search(output)
-            score = int(match.group(1)) if match else None
-
+        for i, score in enumerate(scores):
             if score is not None:
                 record = dict(metadata)
                 record["score"] = score
-                record["run"] = run
+                record["run"] = i
                 records.append(record)
+
 
     if records:
         df = pd.DataFrame(records)
