@@ -21,7 +21,7 @@ def plot_and_save_boxplots(df, variables, output_dir="plots"):
             order = means.index
 
             plt.figure(figsize=(8, 5))
-            sns.boxplot(x=var, y="score", data=df, order=order)
+            sns.violinplot(x=var, y="score", data=df, order=order)
 
             # Add red dots for means
             for i, cat in enumerate(order):
@@ -45,14 +45,14 @@ def main():
     model = Model()
 
     print("Testing Model...")
-    output = model.predict("Say 'it works' and nothing else.")
+    output = model.predict("Say 'ready' and nothing else.")
     print(output)
 
     records = []
     score_pattern = re.compile(r"(\d{1,3})/100")
 
-    temperature = 1.0
-    n_runs = 5
+    temperature = 0
+    n_runs = 1
 
     for cv in tqdm(cvs):
         metadata = cv["metadata"]
