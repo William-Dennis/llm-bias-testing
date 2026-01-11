@@ -68,7 +68,7 @@ companies = [
 
 # Cartesian product of all lists
 combinations = itertools.product(
-    names, universities, [schools[0]], [school_locations[0]], [companies[0]]
+    names, universities[:5], schools[:5], ["UK"], ["Data Solutions"]
 )
 
 cvs = []

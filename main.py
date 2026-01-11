@@ -78,10 +78,10 @@ def main():
                 record["run"] = run
                 records.append(record)
 
-        if records:
-            df = pd.DataFrame(records)
-            variables = ["name", "university"]
-            plot_and_save_boxplots(df, variables)
+    if records:
+        df = pd.DataFrame(records)
+        variables = ["name", "university", "school"]
+        plot_and_save_boxplots(df, variables)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 import ollama
 
-LLM_MODEL = "gemma3:latest"
+LLM_MODEL = "gemma3:1b-it-qat"
 
 
 class Model:
