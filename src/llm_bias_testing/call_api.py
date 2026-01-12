@@ -21,6 +21,10 @@ class Model:
             self.setup_transformers()
         elif provider == "openai":
             self.setup_openai()
+        else:
+            raise ValueError(
+                f"Unknown provider: '{provider}'. Supported providers are 'ollama', 'transformers', 'openai'."
+            )
 
     def predict(self, input_text: str, temperature: float = 0.0) -> str:
         """Generate prediction using configured provider."""
