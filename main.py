@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 import re
@@ -55,8 +56,8 @@ def load_existing_records(filepath="records.csv"):
     if os.path.exists(filepath):
         try:
             df = pd.read_csv(filepath, index_col=0)
-            # Validate expected columns exist
-            required = {"key", "run", "score"}
+            # Validate expected columns exist (key is index due to index_col=0)
+            required = {"run", "score"}
             if not required.issubset(df.columns):
                 logger.warning("records.csv missing columns %s — starting fresh", required - set(df.columns))
                 return pd.DataFrame()
@@ -94,16 +95,18 @@ def process_cv_run(model, cv, run, base_prompt, seen_set, temperature=1):
     return record
 
 
-def main():
-    logging.basicConfig(level=logging.INFO)
-    existing_df = load_existing_records()
+def run_benchmark(model_name, output_dir="results", timeout=1800):
+    records_filepath = os.path.join(output_dir, "records.csv")
+    plots_dir = os.path.join(output_dir, "plots")
+
+    existing_df = load_existing_records(records_filepath)
 
     seen_set = set()
     if not existing_df.empty:
         seen_set = set(zip(existing_df["key"], existing_df["run"]))
 
-    logger.info("Starting Model...")
-    model = Model()
+    logger.info("Starting Model: %s", model_name)
+    model = Model(model_name=model_name)
 
     logger.info("Testing Model...")
     output = model.predict("Say 'ready' and nothing else.")
@@ -131,9 +134,32 @@ def main():
     if records:
         new_df = pd.DataFrame(records)
         existing_df = pd.concat([existing_df, new_df], ignore_index=True)
-        save_records(existing_df)
+        save_records(existing_df, records_filepath)
         variables = ["name", "university", "a_levels"]
-        plot_and_save_boxplots(existing_df, variables)
+        plot_and_save_boxplots(existing_df, variables, output_dir=plots_dir)
+
+    return existing_df if not existing_df.empty else (pd.DataFrame(records) if records else pd.DataFrame())
+
+
+def main():
+    parser = argparse.ArgumentParser(description="CV Screening Bias Test")
+    parser.add_argument("--model", default="gemma3:1b-it-qat", help="Model name to use")
+    parser.add_argument("--models", help="Comma-separated list of model names")
+    parser.add_argument("--timeout", type=int, default=1800, help="Per-model timeout in seconds")
+    parser.add_argument("--output-dir", default="results", help="Results directory")
+    args = parser.parse_args()
+
+    logging.basicConfig(level=logging.INFO)
+
+    if args.models:
+        models = [m.strip() for m in args.models.split(",")]
+    else:
+        models = [args.model]
+
+    for model_name in models:
+        model_output_dir = os.path.join(args.output_dir, model_name.replace(":", "-"))
+        os.makedirs(model_output_dir, exist_ok=True)
+        run_benchmark(model_name, model_output_dir, args.timeout)
 
 
 if __name__ == "__main__":
