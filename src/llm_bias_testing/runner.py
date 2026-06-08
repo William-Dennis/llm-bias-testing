@@ -8,6 +8,14 @@ from llm_bias_testing.registry import MODELS, get_model
 
 logger = logging.getLogger(__name__)
 
+BENCHMARK_CHOICES = ["cv-screening", "stereoset", "crows-pairs", "bbq", "all"]
+
+
+def get_benchmarks(benchmark: str) -> list[str]:
+    if benchmark == "all":
+        return ["cv-screening", "stereoset", "crows-pairs", "bbq"]
+    return [benchmark]
+
 
 def pull_model(ollama_tag: str) -> bool:
     """Pull an Ollama model image if not already present."""
@@ -30,58 +38,98 @@ def run_benchmark_for_model(
     base_output_dir: str,
     timeout: int,
 ) -> None:
-    """Run the benchmark for a single model with resume support."""
+    """Run benchmark(s) for a single model with resume support."""
     model_config = get_model(model_name)
     ollama_tag = model_config["ollama_tag"]
 
-    results_dir = os.path.join(base_output_dir, model_name, benchmark)
-    results_file = os.path.join(results_dir, "results.json")
-
-    if os.path.exists(results_file):
-        logger.info("Results already exist for %s/%s — skipping", model_name, benchmark)
-        return
-
+    # Pull model once before running any benchmarks
     if not pull_model(ollama_tag):
         logger.error("Skipping %s due to pull failure", model_name)
         return
 
-    os.makedirs(results_dir, exist_ok=True)
+    bench_list = get_benchmarks(benchmark)
 
-    logger.info("Running benchmark %s with model %s ...", benchmark, model_name)
+    for bench in bench_list:
+        results_dir = os.path.join(base_output_dir, model_name, bench)
+        results_file = os.path.join(results_dir, "results.json")
 
-    from llm_bias_testing.benchmark import run_benchmark
+        if os.path.exists(results_file):
+            logger.info("Results already exist for %s/%s — skipping", model_name, bench)
+            continue
 
-    df = run_benchmark(
-        model_name=ollama_tag,
-        output_dir=results_dir,
-        timeout=timeout,
-    )
+        os.makedirs(results_dir, exist_ok=True)
 
-    summary = {
-        "model": model_name,
-        "ollama_tag": ollama_tag,
-        "benchmark": benchmark,
-        "n_records": len(df) if df is not None else 0,
-        "mean_score": float(df["score"].mean()) if df is not None and not df.empty else None,
-        "std_score": float(df["score"].std()) if df is not None and not df.empty else None,
-    }
-    with open(results_file, "w") as f:
-        json.dump(summary, f, indent=2)
+        logger.info("Running benchmark %s with model %s ...", bench, model_name)
 
-    logger.info("Saved results for %s/%s (%d records)", model_name, benchmark, summary["n_records"])
+        if bench == "cv-screening":
+            from llm_bias_testing.benchmark import run_benchmark
+
+            df = run_benchmark(
+                model_name=ollama_tag,
+                output_dir=results_dir,
+                timeout=timeout,
+            )
+            summary = {
+                "model": model_name,
+                "ollama_tag": ollama_tag,
+                "benchmark": bench,
+                "n_records": len(df) if df is not None else 0,
+                "mean_score": float(df["score"].mean()) if df is not None and not df.empty else None,
+                "std_score": float(df["score"].std()) if df is not None and not df.empty else None,
+            }
+        else:
+            from llm_bias_testing.call_api import Model as ApiModel
+
+            model = ApiModel(model_name=ollama_tag)
+
+            if bench == "stereoset":
+                from llm_bias_testing.benchmarks.stereoset import StereoSetBenchmark
+                bm = StereoSetBenchmark()
+            elif bench == "crows-pairs":
+                from llm_bias_testing.benchmarks.crows_pairs import CrowsPairsBenchmark
+                bm = CrowsPairsBenchmark()
+            elif bench == "bbq":
+                from llm_bias_testing.benchmarks.bbq import BBQBiasBenchmark
+                bm = BBQBiasBenchmark()
+            else:
+                logger.error("Unknown benchmark: %s", bench)
+                continue
+
+            results = bm.evaluate(model)
+            bm.save_results(results, results_dir)
+
+            summary = {
+                "model": model_name,
+                "ollama_tag": ollama_tag,
+                "benchmark": bench,
+                "n_examples": results.get("n_examples", 0),
+            }
+            if "overall_stereotype_score" in results:
+                summary["overall_stereotype_score"] = results["overall_stereotype_score"]
+            if "overall_bias_score" in results:
+                summary["overall_bias_score"] = results["overall_bias_score"]
+
+        with open(results_file, "w") as f:
+            json.dump(summary, f, indent=2)
+
+        logger.info("Saved results for %s/%s", model_name, bench)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Multi-model batch runner")
     parser.add_argument("models", nargs="+", help="Registered model name(s) to run")
-    parser.add_argument("--benchmark", default="cv-screening", help="Benchmark name")
+    parser.add_argument(
+        "--benchmark",
+        default="cv-screening",
+        choices=BENCHMARK_CHOICES,
+        help="Benchmark to run (default: cv-screening)",
+    )
     parser.add_argument("--output-dir", default="results", help="Base output directory")
     parser.add_argument("--timeout", type=int, default=1800, help="Per-model timeout in seconds")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
 
-    # Validate all model names upfront
     invalid = [m for m in args.models if m not in MODELS]
     if invalid:
         logger.error("Unknown model(s): %s. Available: %s", ", ".join(invalid), ", ".join(MODELS))
