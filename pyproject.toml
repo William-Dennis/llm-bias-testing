@@ -8,6 +8,8 @@ authors = [
 ]
 requires-python = ">=3.11"
 dependencies = [
+    "datasets>=2.18",
+    "evaluate>=0.4",
     "matplotlib>=3.10.3",
     "numpy>=2.4.0",
     "ollama>=0.6.1",
