@@ -1,22 +1,24 @@
+import os
+
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
-from keys import HF_token
 
 
 class Model:
     def __init__(
         self,
         model_name: str = "google/gemma-3-1b-it",
-        token: str = HF_token,
-        device: str = None,
+        token: str | None = None,
+        device: str | None = None,
     ):
-        # Use provided device string or default to cuda if available else cpu
+        if token is None:
+            token = os.environ.get("HF_TOKEN")
         if device is not None:
             self.device = torch.device(device)
         else:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        self.token = token  # save token if needed later
+        self.token = token
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, token=token)
         self.model = AutoModelForCausalLM.from_pretrained(model_name, token=token).to(
             self.device
