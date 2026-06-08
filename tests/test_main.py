@@ -3,7 +3,12 @@ import tempfile
 
 import pandas as pd
 
-from main import SCORE_PATTERN, load_existing_records, save_records, sha256_hash
+from llm_bias_testing.benchmark import (
+    SCORE_PATTERN,
+    load_existing_records,
+    save_records,
+    sha256_hash,
+)
 
 
 class TestSHA256Hash:
@@ -20,8 +25,21 @@ class TestScorePattern:
         assert match is not None
         assert match.group(1) == "85"
 
+    def test_score_pattern_boundary_zero(self):
+        match = SCORE_PATTERN.search("0/100")
+        assert match is not None
+        assert match.group(1) == "0"
+
+    def test_score_pattern_boundary_hundred(self):
+        match = SCORE_PATTERN.search("100/100")
+        assert match is not None
+        assert match.group(1) == "100"
+
     def test_score_pattern_no_match(self):
         assert SCORE_PATTERN.search("no score") is None
+
+    def test_score_pattern_non_numeric(self):
+        assert SCORE_PATTERN.search("abc/100") is None
 
 
 class TestLoadExistingRecords:
@@ -39,6 +57,28 @@ class TestLoadExistingRecords:
             assert isinstance(result, pd.DataFrame)
             assert result.empty
             assert "starting fresh" in caplog.text
+        finally:
+            os.unlink(tmpfile)
+
+    def test_load_existing_records_empty_file(self):
+        with tempfile.NamedTemporaryFile(suffix=".csv", mode="w", delete=False) as f:
+            f.write("")
+            tmpfile = f.name
+        try:
+            result = load_existing_records(tmpfile)
+            assert isinstance(result, pd.DataFrame)
+            assert result.empty
+        finally:
+            os.unlink(tmpfile)
+
+    def test_load_existing_records_headers_only(self):
+        with tempfile.NamedTemporaryFile(suffix=".csv", mode="w", delete=False) as f:
+            f.write("key,run,score\n")
+            tmpfile = f.name
+        try:
+            result = load_existing_records(tmpfile)
+            assert isinstance(result, pd.DataFrame)
+            assert result.empty
         finally:
             os.unlink(tmpfile)
 

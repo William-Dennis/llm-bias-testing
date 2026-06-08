@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import subprocess
-import sys
 
 from llm_bias_testing.registry import MODELS, get_model
 
@@ -50,7 +49,7 @@ def run_benchmark_for_model(
 
     logger.info("Running benchmark %s with model %s ...", benchmark, model_name)
 
-    from main import run_benchmark
+    from llm_bias_testing.benchmark import run_benchmark
 
     df = run_benchmark(
         model_name=ollama_tag,
@@ -82,10 +81,13 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO)
 
+    # Validate all model names upfront
+    invalid = [m for m in args.models if m not in MODELS]
+    if invalid:
+        logger.error("Unknown model(s): %s. Available: %s", ", ".join(invalid), ", ".join(MODELS))
+        return
+
     for model_name in args.models:
-        if model_name not in MODELS:
-            logger.error("Unknown model: %s. Available: %s", model_name, ", ".join(MODELS))
-            sys.exit(1)
         run_benchmark_for_model(model_name, args.benchmark, args.output_dir, args.timeout)
 
 
