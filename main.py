@@ -53,7 +53,16 @@ def plot_and_save_boxplots(df, variables, output_dir="plots", wrap_width=10):
 
 def load_existing_records(filepath="records.csv"):
     if os.path.exists(filepath):
-        return pd.read_csv(filepath, index_col=0)
+        try:
+            df = pd.read_csv(filepath, index_col=0)
+            # Validate expected columns exist
+            required = {"key", "run", "score"}
+            if not required.issubset(df.columns):
+                logger.warning("records.csv missing columns %s — starting fresh", required - set(df.columns))
+                return pd.DataFrame()
+            return df
+        except Exception:
+            logger.exception("Failed to read %s — starting fresh", filepath)
     return pd.DataFrame()
 
 

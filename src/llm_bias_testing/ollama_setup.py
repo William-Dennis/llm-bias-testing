@@ -61,14 +61,18 @@ class OllamaServer:
                     return
             except (urllib.error.URLError, OSError):
                 time.sleep(interval)
-        # Log stderr from the server process before raising
-        if self.process and self.process.stderr:
+        # Terminate the process and read stderr via communicate()
+        stderr_output = ""
+        if self.process:
             try:
-                stderr_output = self.process.stderr.read().decode("utf-8", errors="replace")
-                if stderr_output:
-                    logger.error("Ollama server stderr:\n%s", stderr_output)
+                _, stderr_output = self.process.communicate(timeout=5)
+                stderr_output = stderr_output.decode("utf-8", errors="replace") if stderr_output else ""
             except Exception:
                 logger.exception("Failed to read ollama server stderr")
+                self.process.kill()
+            self.process = None
+        if stderr_output:
+            logger.error("Ollama server stderr:\n%s", stderr_output)
         raise RuntimeError(f"Ollama server did not start within {timeout} seconds")
 
     def stop(self):
