@@ -37,8 +37,10 @@ class CrowsPairsBenchmark(BaseBenchmark):
             logger.exception("Failed to score sentence")
         return 50
 
-    def evaluate(self, model) -> dict:
+    def evaluate(self, model, max_samples: int | None = None) -> dict:
         data = self.load_dataset()
+        if max_samples is not None:
+            data = data[:max_samples]
         results = []
         for item in tqdm(data, desc="CrowS-Pairs"):
             sent_more = item["sent_more"]

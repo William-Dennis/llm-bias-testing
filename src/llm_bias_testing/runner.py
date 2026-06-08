@@ -37,6 +37,7 @@ def run_benchmark_for_model(
     benchmark: str,
     base_output_dir: str,
     timeout: int,
+    max_samples: int | None = None,
 ) -> None:
     """Run benchmark(s) for a single model with resume support."""
     model_config = get_model(model_name)
@@ -68,6 +69,7 @@ def run_benchmark_for_model(
                 model_name=ollama_tag,
                 output_dir=results_dir,
                 timeout=timeout,
+                max_samples=max_samples,
             )
             summary = {
                 "model": model_name,
@@ -95,7 +97,7 @@ def run_benchmark_for_model(
                 logger.error("Unknown benchmark: %s", bench)
                 continue
 
-            results = bm.evaluate(model)
+            results = bm.evaluate(model, max_samples=max_samples)
             bm.save_results(results, results_dir)
 
             summary = {
@@ -103,6 +105,8 @@ def run_benchmark_for_model(
                 "ollama_tag": ollama_tag,
                 "benchmark": bench,
                 "n_examples": results.get("n_examples", 0),
+                "max_samples": max_samples,
+                "timestamp": __import__("datetime").datetime.now().isoformat(),
             }
             if "overall_stereotype_score" in results:
                 summary["overall_stereotype_score"] = results["overall_stereotype_score"]
@@ -126,6 +130,7 @@ def main() -> None:
     )
     parser.add_argument("--output-dir", default="results", help="Base output directory")
     parser.add_argument("--timeout", type=int, default=1800, help="Per-model timeout in seconds")
+    parser.add_argument("--max-samples", type=int, default=None, help="Max samples per benchmark (for testing)")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
@@ -136,7 +141,9 @@ def main() -> None:
         return
 
     for model_name in args.models:
-        run_benchmark_for_model(model_name, args.benchmark, args.output_dir, args.timeout)
+        run_benchmark_for_model(
+            model_name, args.benchmark, args.output_dir, args.timeout, args.max_samples
+        )
 
 
 if __name__ == "__main__":

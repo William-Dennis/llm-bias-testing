@@ -65,18 +65,25 @@ class MockModel:
 
 
 class TestStereoSetBenchmark:
+    def _make_stereoset_item(self, id, bias_type, target, context, stereotype, anti_stereotype):
+        """Helper to create a StereoSet item in the real nested format."""
+        return {
+            "id": id,
+            "bias_type": bias_type,
+            "target": target,
+            "context": context,
+            "sentences": {
+                "sentence": [stereotype, "unrelated sentence", anti_stereotype],
+                "gold_label": [1, 0, 2],  # 1=stereotype, 0=unrelated, 2=anti-stereotype
+            },
+        }
+
     def test_load_dataset(self):
         fake_data = [
-            {
-                "id": 0,
-                "bias_type": "gender",
-                "target": "doctor",
-                "context": "The doctor entered the room.",
-                "stereotype": "He is skilled.",
-                "anti_stereotype": "She is skilled.",
-                "related": "nurse",
-                "unrelated": "table",
-            }
+            self._make_stereoset_item(
+                "test1", "gender", "doctor", "The doctor entered.",
+                "He is skilled.", "She is skilled."
+            )
         ]
 
         with patch("llm_bias_testing.benchmarks.stereoset.datasets.load_dataset") as mock_load:
@@ -85,20 +92,14 @@ class TestStereoSetBenchmark:
             data = bm.load_dataset()
             assert len(data) == 1
             assert data[0]["bias_type"] == "gender"
-            mock_load.assert_called_once_with("stereoset", split="dev")
+            mock_load.assert_called_once_with("stereoset", "intrasentence", split="validation")
 
     def test_evaluate_chosen_stereotype(self):
         fake_data = [
-            {
-                "id": 1,
-                "bias_type": "gender",
-                "target": "doctor",
-                "context": "The doctor entered the room.",
-                "stereotype": "He is skilled.",
-                "anti_stereotype": "She is skilled.",
-                "related": "nurse",
-                "unrelated": "table",
-            }
+            self._make_stereoset_item(
+                "test1", "gender", "doctor", "The doctor entered.",
+                "He is skilled.", "She is skilled."
+            )
         ]
 
         model = MockModel({"He is skilled.": "90", "She is skilled.": "10"})
@@ -111,16 +112,10 @@ class TestStereoSetBenchmark:
 
     def test_evaluate_chosen_anti_stereotype(self):
         fake_data = [
-            {
-                "id": 1,
-                "bias_type": "gender",
-                "target": "doctor",
-                "context": "The doctor entered the room.",
-                "stereotype": "He is skilled.",
-                "anti_stereotype": "She is skilled.",
-                "related": "nurse",
-                "unrelated": "table",
-            }
+            self._make_stereoset_item(
+                "test1", "gender", "doctor", "The doctor entered.",
+                "He is skilled.", "She is skilled."
+            )
         ]
 
         model = MockModel({"He is skilled.": "10", "She is skilled.": "90"})
@@ -131,26 +126,14 @@ class TestStereoSetBenchmark:
 
     def test_per_category(self):
         fake_data = [
-            {
-                "id": 1,
-                "bias_type": "gender",
-                "target": "doctor",
-                "context": "The doctor entered.",
-                "stereotype": "He is skilled.",
-                "anti_stereotype": "She is skilled.",
-                "related": "nurse",
-                "unrelated": "table",
-            },
-            {
-                "id": 2,
-                "bias_type": "race",
-                "target": "person",
-                "context": "The person walked in.",
-                "stereotype": "He is loud.",
-                "anti_stereotype": "She is quiet.",
-                "related": "man",
-                "unrelated": "chair",
-            },
+            self._make_stereoset_item(
+                "test1", "gender", "doctor", "The doctor entered.",
+                "He is skilled.", "She is skilled."
+            ),
+            self._make_stereoset_item(
+                "test2", "race", "person", "The person walked in.",
+                "He is loud.", "She is quiet."
+            ),
         ]
 
         model = MockModel({"He is skilled.": "90", "She is skilled.": "10", "He is loud.": "80", "She is quiet.": "20"})
@@ -159,6 +142,54 @@ class TestStereoSetBenchmark:
             results = bm.evaluate(model)
             assert results["per_category"]["gender"] == 100.0
             assert results["per_category"]["race"] == 100.0
+
+    def test_max_samples_limits_evaluation(self):
+        """Test that max_samples truncates the dataset."""
+        fake_data = [
+            self._make_stereoset_item(
+                "test1", "gender", "doctor", "The doctor entered.",
+                "He is skilled.", "She is skilled."
+            ),
+            self._make_stereoset_item(
+                "test2", "race", "person", "The person walked in.",
+                "He is loud.", "She is quiet."
+            ),
+            self._make_stereoset_item(
+                "test3", "age", "worker", "The worker arrived.",
+                "He is experienced.", "She is experienced."
+            ),
+        ]
+
+        model = MockModel({"He is skilled.": "90", "She is skilled.": "10"})
+        with patch.object(StereoSetBenchmark, "load_dataset", return_value=fake_data):
+            bm = StereoSetBenchmark()
+            results = bm.evaluate(model, max_samples=1)
+            assert results["n_examples"] == 1
+
+    def test_missing_gold_label_skipped(self):
+        """Test that items without stereotype/anti-stereotype are skipped."""
+        fake_data = [
+            {
+                "id": "bad1",
+                "bias_type": "gender",
+                "target": "doctor",
+                "context": "The doctor entered.",
+                "sentences": {
+                    "sentence": ["Only unrelated here"],
+                    "gold_label": [0],
+                },
+            },
+            self._make_stereoset_item(
+                "good1", "gender", "doctor", "The doctor entered.",
+                "He is skilled.", "She is skilled."
+            ),
+        ]
+
+        model = MockModel({"He is skilled.": "90", "She is skilled.": "10"})
+        with patch.object(StereoSetBenchmark, "load_dataset", return_value=fake_data):
+            bm = StereoSetBenchmark()
+            results = bm.evaluate(model)
+            assert results["n_examples"] == 1
 
 
 class TestCrowsPairs:
