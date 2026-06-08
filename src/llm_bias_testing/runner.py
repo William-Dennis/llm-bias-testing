@@ -105,6 +105,8 @@ def run_benchmark_for_model(
                 "ollama_tag": ollama_tag,
                 "benchmark": bench,
                 "n_examples": results.get("n_examples", 0),
+                "max_samples": max_samples,
+                "timestamp": __import__("datetime").datetime.now().isoformat(),
             }
             if "overall_stereotype_score" in results:
                 summary["overall_stereotype_score"] = results["overall_stereotype_score"]

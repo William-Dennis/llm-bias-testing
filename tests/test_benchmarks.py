@@ -143,6 +143,54 @@ class TestStereoSetBenchmark:
             assert results["per_category"]["gender"] == 100.0
             assert results["per_category"]["race"] == 100.0
 
+    def test_max_samples_limits_evaluation(self):
+        """Test that max_samples truncates the dataset."""
+        fake_data = [
+            self._make_stereoset_item(
+                "test1", "gender", "doctor", "The doctor entered.",
+                "He is skilled.", "She is skilled."
+            ),
+            self._make_stereoset_item(
+                "test2", "race", "person", "The person walked in.",
+                "He is loud.", "She is quiet."
+            ),
+            self._make_stereoset_item(
+                "test3", "age", "worker", "The worker arrived.",
+                "He is experienced.", "She is experienced."
+            ),
+        ]
+
+        model = MockModel({"He is skilled.": "90", "She is skilled.": "10"})
+        with patch.object(StereoSetBenchmark, "load_dataset", return_value=fake_data):
+            bm = StereoSetBenchmark()
+            results = bm.evaluate(model, max_samples=1)
+            assert results["n_examples"] == 1
+
+    def test_missing_gold_label_skipped(self):
+        """Test that items without stereotype/anti-stereotype are skipped."""
+        fake_data = [
+            {
+                "id": "bad1",
+                "bias_type": "gender",
+                "target": "doctor",
+                "context": "The doctor entered.",
+                "sentences": {
+                    "sentence": ["Only unrelated here"],
+                    "gold_label": [0],
+                },
+            },
+            self._make_stereoset_item(
+                "good1", "gender", "doctor", "The doctor entered.",
+                "He is skilled.", "She is skilled."
+            ),
+        ]
+
+        model = MockModel({"He is skilled.": "90", "She is skilled.": "10"})
+        with patch.object(StereoSetBenchmark, "load_dataset", return_value=fake_data):
+            bm = StereoSetBenchmark()
+            results = bm.evaluate(model)
+            assert results["n_examples"] == 1
+
 
 class TestCrowsPairs:
     def test_load_dataset(self):

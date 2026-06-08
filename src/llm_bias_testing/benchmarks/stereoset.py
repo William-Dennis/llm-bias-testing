@@ -65,6 +65,7 @@ class StereoSetBenchmark(BaseBenchmark):
 
             # Skip if we can't find both
             if stereotype_text is None or anti_stereotype_text is None:
+                logger.debug("Skipping item %s: missing stereotype or anti-stereotype", item.get("id"))
                 continue
 
             stereo_score = self._score_sentence(model, context, stereotype_text)
