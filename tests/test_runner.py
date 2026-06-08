@@ -4,7 +4,7 @@ from llm_bias_testing.runner import run_benchmark_for_model
 
 
 class TestRunBenchmarkForModel:
-    @patch("llm_bias_testing.runner.pull_model")
+    @patch("llm_bias_testing.runner.pull_model", return_value=True)
     @patch("llm_bias_testing.runner.get_model")
     def test_skip_existing_results(self, mock_get_model, mock_pull):
         import os
@@ -22,8 +22,8 @@ class TestRunBenchmarkForModel:
 
             run_benchmark_for_model("smollm-135m", "cv-screening", tmpdir, 1800)
 
-            # pull_model should NOT be called if results exist
-            mock_pull.assert_not_called()
+            # pull_model is called once (before loop), but benchmark is skipped
+            mock_pull.assert_called_once()
 
     @patch("llm_bias_testing.runner.pull_model", return_value=False)
     @patch("llm_bias_testing.runner.get_model")

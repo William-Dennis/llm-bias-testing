@@ -8,8 +8,6 @@ from llm_bias_testing.benchmarks import BaseBenchmark
 
 logger = logging.getLogger(__name__)
 
-CHOICE_PATTERN = re.compile(r"\b([AB])\b")
-
 
 class CrowsPairsBenchmark(BaseBenchmark):
     name = "crows_pairs"

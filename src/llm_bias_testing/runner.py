@@ -18,6 +18,7 @@ def get_benchmarks(benchmark: str) -> list[str]:
 
 
 def pull_model(ollama_tag: str) -> bool:
+    """Pull an Ollama model image if not already present."""
     logger.info("Pulling model %s ...", ollama_tag)
     result = subprocess.run(
         ["ollama", "pull", ollama_tag],
@@ -37,8 +38,14 @@ def run_benchmark_for_model(
     base_output_dir: str,
     timeout: int,
 ) -> None:
+    """Run benchmark(s) for a single model with resume support."""
     model_config = get_model(model_name)
     ollama_tag = model_config["ollama_tag"]
+
+    # Pull model once before running any benchmarks
+    if not pull_model(ollama_tag):
+        logger.error("Skipping %s due to pull failure", model_name)
+        return
 
     bench_list = get_benchmarks(benchmark)
 
@@ -49,10 +56,6 @@ def run_benchmark_for_model(
         if os.path.exists(results_file):
             logger.info("Results already exist for %s/%s — skipping", model_name, bench)
             continue
-
-        if not pull_model(ollama_tag):
-            logger.error("Skipping %s due to pull failure", model_name)
-            return
 
         os.makedirs(results_dir, exist_ok=True)
 
@@ -79,11 +82,9 @@ def run_benchmark_for_model(
 
             model = ApiModel(model_name=ollama_tag)
 
-            from llm_bias_testing.benchmarks import BaseBenchmark
-
             if bench == "stereoset":
                 from llm_bias_testing.benchmarks.stereoset import StereoSetBenchmark
-                bm: BaseBenchmark = StereoSetBenchmark()
+                bm = StereoSetBenchmark()
             elif bench == "crows-pairs":
                 from llm_bias_testing.benchmarks.crows_pairs import CrowsPairsBenchmark
                 bm = CrowsPairsBenchmark()
