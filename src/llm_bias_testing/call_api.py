@@ -1,10 +1,16 @@
+import logging
+
 import ollama
 
 from llm_bias_testing.ollama_setup import OllamaServer
 from llm_bias_testing.transformers import Model as TransformerModel
 
+logger = logging.getLogger(__name__)
+
 LLM_MODEL = "gemma3:1b-it-qat"
 PROVIDER = "ollama"
+
+_ollama_client = ollama.Client(timeout=300)
 
 
 class Model:
@@ -29,7 +35,7 @@ class Model:
             )
 
     def setup_ollama(self):
-        print("Starting Ollama Server...")
+        logger.info("Starting Ollama Server...")
         self.server = OllamaServer()
         self.server.start()
 
@@ -41,7 +47,7 @@ class Model:
         return self.model.predict(input_text, temperature)
 
     def predict_ollama(self, input_text: str, temperature: float = 0.0) -> str:
-        response = ollama.chat(
+        response = _ollama_client.chat(
             model=self.model_name,
             messages=[{"role": "user", "content": input_text}],
             options={

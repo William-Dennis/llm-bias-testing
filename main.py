@@ -1,16 +1,22 @@
-import re
+import logging
 import os
+import re
+import textwrap
+import hashlib
+
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-import textwrap
-import hashlib
 
 from llm_bias_testing.call_api import Model
 
 from examples.cvs import cvs
 from examples.job_description import job_description
+
+logger = logging.getLogger(__name__)
+
+SCORE_PATTERN = re.compile(r"(\d{1,3})/100")
 
 
 def sha256_hash(text):
@@ -55,23 +61,21 @@ def save_records(df, filepath="records.csv"):
     df.to_csv(filepath)
 
 
-def record_exists(df, key, run):
-    if df.empty:
-        return False
-    return ((df["key"] == key) & (df["run"] == run)).any()
-
-
-def process_cv_run(model, cv, run, base_prompt, existing_df, temperature=1):
+def process_cv_run(model, cv, run, base_prompt, seen_set, temperature=1):
     metadata = cv["metadata"]
     prompt = base_prompt + f"\nCandidate CV\n{cv['cv']}"
     key = sha256_hash(prompt)
 
-    if record_exists(existing_df, key, run):
+    if (key, run) in seen_set:
         return None  # Skip if record exists
 
-    output = model.predict(prompt, temperature=temperature)
-    score_pattern = re.compile(r"(\d{1,3})/100")
-    match = score_pattern.search(output)
+    try:
+        output = model.predict(prompt, temperature=temperature)
+    except Exception:
+        logger.exception("Model prediction failed for key %s, run %d", key, run)
+        return None
+
+    match = SCORE_PATTERN.search(output)
     if not match:
         return None
 
@@ -82,14 +86,19 @@ def process_cv_run(model, cv, run, base_prompt, existing_df, temperature=1):
 
 
 def main():
+    logging.basicConfig(level=logging.INFO)
     existing_df = load_existing_records()
 
-    print("Starting Model...")
+    seen_set = set()
+    if not existing_df.empty:
+        seen_set = set(zip(existing_df["key"], existing_df["run"]))
+
+    logger.info("Starting Model...")
     model = Model()
 
-    print("Testing Model...")
+    logger.info("Testing Model...")
     output = model.predict("Say 'ready' and nothing else.")
-    print(output)
+    logger.info("Test response: %s", output)
 
     temperature = 1
     n_runs = 3
@@ -101,21 +110,19 @@ def main():
         f"\nJob Description\n{job_description}"
     )
 
-    updated = False
+    records = []
     for cv in tqdm(cvs):
         for run in range(n_runs):
             record = process_cv_run(
-                model, cv, run, base_prompt, existing_df, temperature
+                model, cv, run, base_prompt, seen_set, temperature
             )
             if record:
-                # Append to existing DataFrame and save immediately
-                existing_df = pd.concat(
-                    [existing_df, pd.DataFrame([record])], ignore_index=True
-                )
-                save_records(existing_df)
-                updated = True
+                records.append(record)
 
-    if updated:
+    if records:
+        new_df = pd.DataFrame(records)
+        existing_df = pd.concat([existing_df, new_df], ignore_index=True)
+        save_records(existing_df)
         variables = ["name", "university", "a_levels"]
         plot_and_save_boxplots(existing_df, variables)
 
