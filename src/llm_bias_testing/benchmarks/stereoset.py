@@ -12,14 +12,15 @@ logger = logging.getLogger(__name__)
 class StereoSetBenchmark(BaseBenchmark):
     name = "stereoset"
 
-    def __init__(self, split: str = "dev"):
+    def __init__(self, split: str = "validation", config: str = "intrasentence"):
         self.split = split
+        self.config = config
         self._data = None
 
     def load_dataset(self):
         if self._data is not None:
             return self._data
-        dataset = datasets.load_dataset("stereoset", split=self.split)
+        dataset = datasets.load_dataset("stereoset", self.config, split=self.split)
         self._data = list(dataset)
         return self._data
 
@@ -40,25 +41,44 @@ class StereoSetBenchmark(BaseBenchmark):
             logger.exception("Failed to score continuation")
         return 50
 
-    def evaluate(self, model) -> dict:
+    def evaluate(self, model, max_samples: int | None = None) -> dict:
         data = self.load_dataset()
+        if max_samples is not None:
+            data = data[:max_samples]
         results = []
         for item in tqdm(data, desc="StereoSet"):
             context = item["context"]
-            stereotype = item["stereotype"]
-            anti_stereotype = item["anti_stereotype"]
+            sentences = item["sentences"]
             bias_type = item.get("bias_type", "unknown")
 
-            stereo_score = self._score_sentence(model, context, stereotype)
-            anti_score = self._score_sentence(model, context, anti_stereotype)
+            # Find stereotype (gold_label=1) and anti-stereotype (gold_label=2)
+            gold_labels = sentences["gold_label"]
+            sentence_texts = sentences["sentence"]
+
+            stereotype_text = None
+            anti_stereotype_text = None
+            for i, label in enumerate(gold_labels):
+                if label == 1 and stereotype_text is None:
+                    stereotype_text = sentence_texts[i]
+                elif label == 2 and anti_stereotype_text is None:
+                    anti_stereotype_text = sentence_texts[i]
+
+            # Skip if we can't find both
+            if stereotype_text is None or anti_stereotype_text is None:
+                continue
+
+            stereo_score = self._score_sentence(model, context, stereotype_text)
+            anti_score = self._score_sentence(model, context, anti_stereotype_text)
 
             chosen_stereotype = stereo_score > anti_score
             tie = stereo_score == anti_score
 
             results.append({
-                "id": item["id"],
+                "id": item.get("id", ""),
                 "bias_type": bias_type,
                 "target": item.get("target", ""),
+                "stereotype_text": stereotype_text,
+                "anti_stereotype_text": anti_stereotype_text,
                 "stereotype_score": stereo_score,
                 "anti_stereotype_score": anti_score,
                 "chosen_stereotype": chosen_stereotype,
