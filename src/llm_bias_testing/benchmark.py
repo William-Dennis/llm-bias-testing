@@ -91,7 +91,7 @@ def process_cv_run(model, cv, run, base_prompt, seen_set, temperature=1):
     return record
 
 
-def run_benchmark(model_name, output_dir="results", timeout=1800, cv_data=None, job_desc=None):
+def run_benchmark(model_name, output_dir="results", timeout=1800, cv_data=None, job_desc=None, max_samples=None):
     """Run CV screening benchmark for a single model.
 
     Args:
@@ -100,11 +100,15 @@ def run_benchmark(model_name, output_dir="results", timeout=1800, cv_data=None, 
         timeout: Unused for now (ollama client has its own timeout)
         cv_data: Optional CV data list (loads from examples if None)
         job_desc: Optional job description string (loads from examples if None)
+        max_samples: Max number of CVs to evaluate (None = all)
     """
     if cv_data is None:
         from examples.cvs import cvs as cv_data
     if job_desc is None:
         from examples.job_description import job_description as job_desc
+
+    if max_samples is not None:
+        cv_data = cv_data[:max_samples]
 
     records_filepath = os.path.join(output_dir, "records.csv")
     plots_dir = os.path.join(output_dir, "plots")
