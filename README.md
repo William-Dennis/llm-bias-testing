@@ -30,8 +30,25 @@ uv run python scripts/run_experiments.py --models smollm2-135m,smollm2-360m --be
 | `cv-screening` | ✅ Working | Detects bias in CV scoring by name/university/A-levels |
 | `stereoset` | ✅ Working | Standardised stereotype score by category (gender, race, religion, profession) |
 | `demographic-bias` | ✅ Working | Measures output length differences across 8 demographic groups (400 prompts) |
-| `crows-pairs` | ❌ Unavailable | HuggingFace dataset deprecated — not accessible |
-| `bbq` | ❌ Unavailable | HuggingFace dataset not found |
+| `winobias` | ✅ Working | Coreference resolution bias — gender pronoun vs occupation stereotypes (1584 examples) |
+
+## Models
+
+16 registered models in `src/llm_bias_testing/registry.py`. Under 1B params:
+
+| Name | Ollama Tag | Params | Release | Family |
+|---|---|---|---|---|
+| gemma3-270m | gemma3:270m | 270M | 2025-03 | google |
+| smollm-135m | smollm:135m | 135M | 2024-07 | huggingface |
+| smollm-360m | smollm:360m | 360M | 2024-07 | huggingface |
+| smollm2-135m | smollm2:135m | 135M | 2024-11 | huggingface |
+| smollm2-360m | smollm2:360m | 360M | 2024-11 | huggingface |
+| qwen25-05b | qwen2.5:0.5b | 500M | 2024-09 | alibaba |
+| qwen3-06b | qwen3:0.6b | 600M | 2025-04 | alibaba |
+| qwen35-08b | qwen3.5:0.8b | 800M | 2025-05 | alibaba |
+| lfm2-350m | sam860/lfm2:350m | 350M | 2025-07 | liquid |
+| lfm2-700m | sam860/lfm2:700m | 700M | 2025-07 | liquid |
+| granite4-350m | granite4:350m | 350M | 2025-10 | ibm |
 
 ## CLI Reference
 
@@ -65,18 +82,35 @@ uv run python scripts/run_experiments.py \
   --max-samples 20 --timeout 300
 ```
 
+### `scripts/overnight_run.sh` (full eval, ~6 hrs)
+
+Pulls all 11 models and runs all 4 benchmarks with resume support:
+
+```bash
+bash scripts/overnight_run.sh
+```
+
+Kill-safe: re-running skips already-completed model/benchmark pairs. Results
+go to `results/YYYY-MM-DD_HHMM/` with a full log. Estimated time: ~18h at full
+samples, or ~2.5h for just Stereoset (200) + WinoBias (full).
+
 ## Models
 
 11 registered models in `src/llm_bias_testing/registry.py`. Models under 1B params:
 
 | Name | Ollama Tag | Params | Release | Family |
 |---|---|---|---|---|
+| gemma3-270m | gemma3:270m | 270M | 2025-03 | google |
 | smollm-135m | smollm:135m | 135M | 2024-07 | huggingface |
 | smollm-360m | smollm:360m | 360M | 2024-07 | huggingface |
 | smollm2-135m | smollm2:135m | 135M | 2024-11 | huggingface |
 | smollm2-360m | smollm2:360m | 360M | 2024-11 | huggingface |
 | qwen25-05b | qwen2.5:0.5b | 500M | 2024-09 | alibaba |
+| qwen3-06b | qwen3:0.6b | 600M | 2025-04 | alibaba |
 | qwen35-08b | qwen3.5:0.8b | 800M | 2025-05 | alibaba |
+| lfm2-350m | sam860/lfm2:350m | 350M | 2025-07 | liquid |
+| lfm2-700m | sam860/lfm2:700m | 700M | 2025-07 | liquid |
+| granite4-350m | granite4:350m | 350M | 2025-10 | ibm |
 
 ## Experiment Results (June 2026)
 

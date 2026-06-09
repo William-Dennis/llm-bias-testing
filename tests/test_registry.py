@@ -39,6 +39,9 @@ class TestModelsByFamily:
         assert result == {}
 
 
+VALID_ARCHS = {"decoder-only", "hybrid-conv-attn"}
+
+
 class TestRegistryCompleteness:
     def test_all_models_have_required_fields(self):
         required = {"ollama_tag", "params", "release_date", "family", "architecture"}
@@ -51,4 +54,4 @@ class TestRegistryCompleteness:
 
     def test_all_models_decoder_only(self):
         for name, config in MODELS.items():
-            assert config["architecture"] == "decoder-only", f"Model {name} has unexpected architecture"
+            assert config["architecture"] in VALID_ARCHS, f"Model {name} has unexpected architecture: {config['architecture']}"

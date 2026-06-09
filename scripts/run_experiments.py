@@ -13,7 +13,7 @@ import sys
 import time
 from datetime import datetime
 
-from llm_bias_testing.registry import MODELS, list_models
+from llm_bias_testing.registry import MODELS
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -22,11 +22,16 @@ logger = logging.getLogger(__name__)
 SLM_MODELS = [
     "smollm-135m",   # 2024-07, 135M
     "smollm-360m",   # 2024-07, 360M
-    "smollm2-135m",  # 2024-11, 135M
-    "smollm2-360m",  # 2024-11, 360M
     "qwen25-05b",    # 2024-09, 500M
     "qwen25-15b",    # 2024-09, 1.5B
+    "smollm2-135m",  # 2024-11, 135M
+    "smollm2-360m",  # 2024-11, 360M
+    "gemma3-270m",   # 2025-03, 270M
+    "qwen3-06b",     # 2025-04, 600M
     "qwen35-08b",    # 2025-05, 800M
+    "lfm2-350m",     # 2025-07, 350M
+    "lfm2-700m",     # 2025-07, 700M
+    "granite4-350m", # 2025-10, 350M
 ]
 
 
