@@ -34,18 +34,25 @@ MODELS = {
         "family": "alibaba",
         "architecture": "decoder-only",
     },
+    "qwen25-15b": {
+        "ollama_tag": "qwen2.5:1.5b",
+        "params": 1_500_000_000,
+        "release_date": "2024-09",
+        "family": "alibaba",
+        "architecture": "decoder-only",
+    },
+    "qwen35-08b": {
+        "ollama_tag": "qwen3.5:0.8b",
+        "params": 800_000_000,
+        "release_date": "2025-05",
+        "family": "alibaba",
+        "architecture": "decoder-only",
+    },
     "llama32-1b": {
         "ollama_tag": "llama3.2:1b",
         "params": 1_000_000_000,
         "release_date": "2024-09",
         "family": "meta",
-        "architecture": "decoder-only",
-    },
-    "gemma3-1b": {
-        "ollama_tag": "gemma3:1b-it-qat",
-        "params": 1_000_000_000,
-        "release_date": "2025-03",
-        "family": "google",
         "architecture": "decoder-only",
     },
     "tinyllama": {
@@ -62,11 +69,11 @@ MODELS = {
         "family": "stability",
         "architecture": "decoder-only",
     },
-    "qwen25-15b": {
-        "ollama_tag": "qwen2.5:1.5b",
-        "params": 1_500_000_000,
-        "release_date": "2024-09",
-        "family": "alibaba",
+    "gemma3-1b": {
+        "ollama_tag": "gemma3:1b-it-qat",
+        "params": 1_000_000_000,
+        "release_date": "2025-03",
+        "family": "google",
         "architecture": "decoder-only",
     },
 }
