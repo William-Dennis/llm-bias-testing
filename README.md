@@ -1,8 +1,84 @@
-# LLM Bias Testing
+# LLM Bias Testing 🔍
 
-Evaluate bias in small language models across multiple benchmarks.
+**Bias benchmarks for small language models (<1B params).**
 
-## Quick Start
+Track how bias changes as models get smaller, newer, and smarter.
+Run your own evaluations, compare models, and visualize trends.
+
+```bash
+uv sync --extra dev
+uv run python -m llm_bias_testing.runner smollm2-135m --benchmark all
+```
+
+---
+
+## What this does
+
+Four bias benchmarks, one command per model:
+
+| Benchmark | What it measures | Samples |
+|---|---|---|
+| **StereoSet** | Stereotype score across gender, race, religion, profession | 2106 |
+| **WinoBias** | Gender pronoun resolution bias (pro vs anti-stereotypical) | 1584 |
+| **CV Screening** | Scoring bias by name, gender, ethnicity, university prestige | 600 CVs × 10 runs |
+| **Demographic Bias** | Output length disparity across 8 demographic groups | 400 prompts |
+
+---
+
+## Latest results (June 2026)
+
+### StereoScore (lower = less stereotyped)
+
+<p float="left">
+  <img src="figs/temporal_trends.png" width="700" alt="Bias score vs release date">
+</p>
+
+| Model | Family | Release | StereoScore |
+|---|---|---|---|
+| smollm2-135m | huggingface | 2024-11 | **5.0%** |
+| gemma3-270m | google | 2025-03 | **10.0%** |
+| smollm-135m | huggingface | 2024-07 | 20.0% |
+| qwen25-15b | alibaba | 2024-09 | 20.0% |
+| smollm-360m | huggingface | 2024-07 | 25.0% |
+| smollm2-360m | huggingface | 2024-11 | 35.0% |
+| qwen25-05b | alibaba | 2024-09 | 35.0% |
+
+### WinoBias (lower = less gender-coded)
+
+| Model | Family | Release | Bias Score |
+|---|---|---|---|
+| smollm2-360m | huggingface | 2024-11 | **7.2** |
+| qwen25-05b | alibaba | 2024-09 | **16.9** |
+
+*Bias score = pro-accuracy minus anti-accuracy. 0 = no gendered bias in pronoun resolution.*
+
+### CV Screening
+
+For smollm2-135m: mean score 82.5/100. Statistical analysis saves to `results/analysis_summary.txt` with group means, confidence intervals, Cohen's d, and variance breakdown by gender, ethnicity, and university prestige.
+
+---
+
+## Models (under 1B params)
+
+11 models across 5 families, spanning July 2024 to October 2025:
+
+| Name | Ollama Tag | Params | Release | Family |
+|---|---|---|---|---|
+| gemma3-270m | gemma3:270m | 270M | 2025-03 | google |
+| smollm-135m | smollm:135m | 135M | 2024-07 | huggingface |
+| smollm-360m | smollm:360m | 360M | 2024-07 | huggingface |
+| smollm2-135m | smollm2:135m | 135M | 2024-11 | huggingface |
+| smollm2-360m | smollm2:360m | 360M | 2024-11 | huggingface |
+| qwen25-05b | qwen2.5:0.5b | 500M | 2024-09 | alibaba |
+| qwen3-06b | qwen3:0.6b | 600M | 2025-04 | alibaba |
+| qwen35-08b | qwen3.5:0.8b | 800M | 2025-05 | alibaba |
+| lfm2-350m | sam860/lfm2:350m | 350M | 2025-07 | liquid |
+| lfm2-700m | sam860/lfm2:700m | 700M | 2025-07 | liquid |
+| granite4-350m | granite4:350m | 350M | 2025-10 | ibm |
+
+---
+
+## Quick start
 
 ```bash
 # Install
@@ -11,135 +87,76 @@ uv sync --extra dev
 # Run all benchmarks on one model
 uv run python -m llm_bias_testing.runner smollm2-135m --benchmark all
 
-# Run specific benchmark with limited samples
+# Run a specific benchmark with limited samples
 uv run python -m llm_bias_testing.runner smollm2-135m --benchmark stereoset --max-samples 20
 
-# Batch run experiment script
-uv run python scripts/run_experiments.py --models smollm2-135m,smollm2-360m --benchmarks stereoset --max-samples 20
-```
-
-## Prerequisites
-
-- [Ollama](https://ollama.ai) — all models run locally via Ollama
-- `uv` (or `pip`) for Python dependencies
-
-## Benchmarks
-
-| Benchmark | Status | Description |
-|---|---|---|
-| `cv-screening` | ✅ Working | Detects bias in CV scoring by name/university/A-levels |
-| `stereoset` | ✅ Working | Standardised stereotype score by category (gender, race, religion, profession) |
-| `demographic-bias` | ✅ Working | Measures output length differences across 8 demographic groups (400 prompts) |
-| `winobias` | ✅ Working | Coreference resolution bias — gender pronoun vs occupation stereotypes (1584 examples) |
-
-## Models
-
-16 registered models in `src/llm_bias_testing/registry.py`. Under 1B params:
-
-| Name | Ollama Tag | Params | Release | Family |
-|---|---|---|---|---|
-| gemma3-270m | gemma3:270m | 270M | 2025-03 | google |
-| smollm-135m | smollm:135m | 135M | 2024-07 | huggingface |
-| smollm-360m | smollm:360m | 360M | 2024-07 | huggingface |
-| smollm2-135m | smollm2:135m | 135M | 2024-11 | huggingface |
-| smollm2-360m | smollm2:360m | 360M | 2024-11 | huggingface |
-| qwen25-05b | qwen2.5:0.5b | 500M | 2024-09 | alibaba |
-| qwen3-06b | qwen3:0.6b | 600M | 2025-04 | alibaba |
-| qwen35-08b | qwen3.5:0.8b | 800M | 2025-05 | alibaba |
-| lfm2-350m | sam860/lfm2:350m | 350M | 2025-07 | liquid |
-| lfm2-700m | sam860/lfm2:700m | 700M | 2025-07 | liquid |
-| granite4-350m | granite4:350m | 350M | 2025-10 | ibm |
-
-## CLI Reference
-
-### `runner.py` (recommended)
-
-```bash
-uv run python -m llm_bias_testing.runner <model_name> [options]
-
-Arguments:
-  model_name               Registered model name (e.g. smollm2-135m, qwen25-05b)
-
-Options:
-  --benchmark {cv-screening,stereoset,demographic-bias,all}
-  --output-dir DIR         Results directory (default: results/)
-  --timeout SECS           Per-model timeout (default: 1800)
-  --max-samples N          Limit samples for testing (default: all)
-```
-
-### `main.py` (legacy, CV-only)
-
-```bash
-uv run python main.py --model smollm2-135m
-```
-
-### `scripts/run_experiments.py` (batch runner)
-
-```bash
+# Batch: multiple models, one benchmark
 uv run python scripts/run_experiments.py \
   --models smollm2-135m,smollm2-360m \
-  --benchmarks stereoset,demographic-bias \
-  --max-samples 20 --timeout 300
+  --benchmarks stereoset \
+  --max-samples 20
+
+# Temporal trend analysis
+uv run python -m llm_bias_testing.temporal
 ```
 
-### `scripts/overnight_run.sh` (full eval, ~6 hrs)
-
-Pulls all 11 models and runs all 4 benchmarks with resume support:
+### Full overnight eval
 
 ```bash
 bash scripts/overnight_run.sh
 ```
+Pulls all models, runs all benchmarks, saves to `results/YYYY-MM-DD_HHMM/`. Kill-safe — re-running skips completed pairs. See `scripts/overnight_run.sh` for details.
 
-Kill-safe: re-running skips already-completed model/benchmark pairs. Results
-go to `results/YYYY-MM-DD_HHMM/` with a full log. Estimated time: ~18h at full
-samples, or ~2.5h for just Stereoset (200) + WinoBias (full).
+---
 
-## Models
+## Outputs
 
-11 registered models in `src/llm_bias_testing/registry.py`. Models under 1B params:
+```
+results/
+  {model}/
+    {benchmark}/
+      results.json       # Summary scores
+      {benchmark}.json   # Full per-item results
+      plots/             # Violin plots (CV screening)
+  analysis_summary.txt   # Statistical analysis (group means, CI, Cohen's d)
 
-| Name | Ollama Tag | Params | Release | Family |
-|---|---|---|---|---|
-| gemma3-270m | gemma3:270m | 270M | 2025-03 | google |
-| smollm-135m | smollm:135m | 135M | 2024-07 | huggingface |
-| smollm-360m | smollm:360m | 360M | 2024-07 | huggingface |
-| smollm2-135m | smollm2:135m | 135M | 2024-11 | huggingface |
-| smollm2-360m | smollm2:360m | 360M | 2024-11 | huggingface |
-| qwen25-05b | qwen2.5:0.5b | 500M | 2024-09 | alibaba |
-| qwen3-06b | qwen3:0.6b | 600M | 2025-04 | alibaba |
-| qwen35-08b | qwen3.5:0.8b | 800M | 2025-05 | alibaba |
-| lfm2-350m | sam860/lfm2:350m | 350M | 2025-07 | liquid |
-| lfm2-700m | sam860/lfm2:700m | 700M | 2025-07 | liquid |
-| granite4-350m | granite4:350m | 350M | 2025-10 | ibm |
+figs/
+  temporal_trends.png         # Bias score vs release date
+  family_comparison.png       # Per-family bias comparison
+```
 
-## Experiment Results (June 2026)
+---
 
-### StereoSet (6 models, 20 samples each)
+## Project structure
 
-| Model | StereoScore |
-|---|---|
-| smollm2-135m | 5.0% |
-| smollm-135m | 20.0% |
-| qwen2.5:1.5b | 20.0% |
-| smollm-360m | 25.0% |
-| smollm2-360m | 35.0% |
-| qwen2.5:0.5b | 35.0% |
+```
+src/llm_bias_testing/
+  registry.py       — Model definitions (name → ollama tag)
+  runner.py         — CLI entry point for running benchmarks
+  benchmark.py      — CV screening benchmark
+  call_api.py       — Ollama model API client
+  temporal.py       — Temporal analysis & trend plots
+  analysis.py       — Statistical helpers (CI, Cohen's d, variance)
+  benchmarks/
+    stereoset.py         — StereoSet benchmark
+    winobias.py          — WinoBias gender coreference benchmark
+    demographic_bias.py  — Output length disparity benchmark
 
-### Demographic Bias (smollm2-135m, 400 prompts)
+scripts/
+  run_experiments.py  — Batch runner
+  overnight_run.sh    — Full automated eval
 
-| Group | Avg Output Length |
-|---|---|
-| religion_muslim | 658.6 |
-| age_old | 637.6 |
-| age_young | 603.7 |
-| gender_male | 569.4 |
-| gender_female | 561.4 |
-| race_white | 513.0 |
-| race_black | 507.3 |
-| religion_christian | 462.9 |
+tests/                — 53 tests
+```
 
-Key finding: Muslim prompts get 42% more output than Christian prompts.
-Gender and race differences are small.
+---
+
+## Prerequisites
+
+- [Ollama](https://ollama.ai) — all models run locally
+- `uv` (or `pip`) for Python dependencies
+
+---
 
 ## Tests
 
@@ -148,24 +165,6 @@ uv run pytest tests/ -q
 uv run ruff check src tests
 ```
 
-## Project Structure
+---
 
-```
-src/llm_bias_testing/
-  registry.py       — Model definitions (name → ollama tag)
-  runner.py         — CLI entry point for running benchmarks
-  benchmark.py      — CV screening benchmark (legacy)
-  call_api.py       — Ollama model API client
-  ollama_setup.py   — Ollama server management
-  benchmarks/
-    __init__.py      — BaseBenchmark abstract class
-    stereoset.py     — StereoSet benchmark
-    demographic_bias.py — Demographic bias benchmark
-    crows_pairs.py   — Unavailable (deprecated dataset)
-    bbq.py           — Unavailable (dataset not found)
-```
-
-## Issues
-
-- Open issues #1 and #3 (Add OpenAI/Gemini API) are superseded — the repo now uses Ollama for all models.
-- CrowS-Pairs and BBQ benchmarks are non-functional due to HuggingFace dataset deprecation.
+*Questions? Open an issue or ping @William-Dennis.*

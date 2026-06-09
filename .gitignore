@@ -3,6 +3,9 @@ keys.py
 # Experiment results
 results/
 
+# Generated figures
+figs/
+
 # IDE
 .idea/
 .vscode/

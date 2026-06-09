@@ -118,6 +118,14 @@ def run_benchmark_for_model(
                 summary["overall_stereotype_score"] = results["overall_stereotype_score"]
             if "overall_bias_score" in results:
                 summary["overall_bias_score"] = results["overall_bias_score"]
+            if "bias_score" in results:
+                summary["bias_score"] = results["bias_score"]
+            if "overall_accuracy" in results:
+                summary["overall_accuracy"] = results["overall_accuracy"]
+            if "pro_accuracy" in results:
+                summary["pro_accuracy"] = results["pro_accuracy"]
+            if "anti_accuracy" in results:
+                summary["anti_accuracy"] = results["anti_accuracy"]
 
         with open(results_file, "w") as f:
             json.dump(summary, f, indent=2)
