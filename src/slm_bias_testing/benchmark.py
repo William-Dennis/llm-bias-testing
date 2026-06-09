@@ -10,8 +10,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-from llm_bias_testing.call_api import Model
-from llm_bias_testing.analysis import build_summary_table
+from slm_bias_testing.call_api import Model
+from slm_bias_testing.analysis import build_summary_table
 
 logger = logging.getLogger(__name__)
 

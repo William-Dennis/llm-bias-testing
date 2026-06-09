@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Overnight evaluation run for LLM Bias Testing
+# Overnight evaluation run for SLM Bias Testing
 # Run: bash scripts/overnight_run.sh
 # Designed to be kill-safe: re-running skips already-completed model/benchmark pairs.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
-RESULTS_DIR="results/$(date +%Y-%m-%d_%H%M)"
+RESULTS_DIR="results"
 LOG_FILE="${RESULTS_DIR}/run.log"
 TIMEOUT=1800  # 30 min per model/benchmark pair
 
@@ -55,11 +55,6 @@ echo "All models pulled" | tee -a "$LOG_FILE"
 echo "" | tee -a "$LOG_FILE"
 echo "--- Running benchmarks ---" | tee -a "$LOG_FILE"
 
-# Light benchmarks (fast, full samples)
-LIGHT_BENCHMARKS="stereoset,demographic-bias"
-# Heavy benchmarks (slower, may limit samples)
-HEAVY_BENCHMARKS="winobias"
-
 # Build model list for runner (registered names only)
 MODEL_NAMES=""
 for entry in "${UNDER_1B_MODELS[@]}"; do
@@ -72,16 +67,14 @@ for entry in "${UNDER_1B_MODELS[@]}"; do
 done
 
 echo "Models: $MODEL_NAMES" | tee -a "$LOG_FILE"
-echo "Light benchmarks: $LIGHT_BENCHMARKS" | tee -a "$LOG_FILE"
-echo "Heavy benchmarks: $HEAVY_BENCHMARKS" | tee -a "$LOG_FILE"
 echo "Timeout per pair: ${TIMEOUT}s" | tee -a "$LOG_FILE"
 echo "" | tee -a "$LOG_FILE"
 
-# Run light benchmarks (all models, full samples)
-echo "=== Phase 1: Light benchmarks ===" | tee -a "$LOG_FILE"
+# Phase 1: Light benchmarks (stereoset + demographic-bias)
+echo "=== Phase 1: Light benchmarks (stereoset + demographic-bias) ===" | tee -a "$LOG_FILE"
 uv run python scripts/run_experiments.py \
     --models "$MODEL_NAMES" \
-    --benchmarks "$LIGHT_BENCHMARKS" \
+    --benchmarks "stereoset,demographic-bias" \
     --output-dir "$RESULTS_DIR" \
     --timeout "$TIMEOUT" 2>&1 | tee -a "$LOG_FILE"
 
@@ -89,19 +82,16 @@ echo "" | tee -a "$LOG_FILE"
 echo "=== Phase 2: WinoBias ===" | tee -a "$LOG_FILE"
 uv run python scripts/run_experiments.py \
     --models "$MODEL_NAMES" \
-    --benchmarks "$HEAVY_BENCHMARKS" \
+    --benchmarks "winobias" \
     --output-dir "$RESULTS_DIR" \
     --timeout "$TIMEOUT" 2>&1 | tee -a "$LOG_FILE"
 
 echo "" | tee -a "$LOG_FILE"
-echo "=== Phase 3: CV screening (limited) ===" | tee -a "$LOG_FILE"
-# CV screening is heavy: 3000 CVs × 10 runs = 30000 evals per model
-# Run with max 100 CVs × 10 runs = 1000 evals per model
+echo "=== Phase 3: CV screening (100 CVs x 10 runs) ===" | tee -a "$LOG_FILE"
 for entry in "${UNDER_1B_MODELS[@]}"; do
     name="${entry%%:*}"
-    tag="${entry#*:}"
     echo "  CV screening: $name" | tee -a "$LOG_FILE"
-    uv run python -m llm_bias_testing.runner \
+    uv run python -m slm_bias_testing.runner \
         "$name" \
         --benchmark cv-screening \
         --output-dir "$RESULTS_DIR" \
@@ -109,14 +99,22 @@ for entry in "${UNDER_1B_MODELS[@]}"; do
         --max-samples 100 2>&1 | tee -a "$LOG_FILE"
 done
 
-# 4. Generate summary
+# 4. Generate temporal analysis
+echo "" | tee -a "$LOG_FILE"
+echo "=== Phase 4: Temporal analysis ===" | tee -a "$LOG_FILE"
+uv run python -m slm_bias_testing.temporal \
+    --results-dir "$RESULTS_DIR" 2>&1 | tee -a "$LOG_FILE"
+
+# 5. Summary
 echo "" | tee -a "$LOG_FILE"
 echo "=== Summary ===" | tee -a "$LOG_FILE"
 echo "Completed: $(date)" | tee -a "$LOG_FILE"
 echo "Results in: $RESULTS_DIR" | tee -a "$LOG_FILE"
 
 # Print result counts
-find "$RESULTS_DIR" -name "results.json" | while read f; do
+echo "" | tee -a "$LOG_FILE"
+echo "Result files:" | tee -a "$LOG_FILE"
+find "$RESULTS_DIR" -name "results.json" | sort | while read f; do
     echo "  $f" | tee -a "$LOG_FILE"
 done
 
