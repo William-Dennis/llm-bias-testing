@@ -1,0 +1,9 @@
+{
+  "model": "smollm-360m",
+  "ollama_tag": "smollm:360m",
+  "benchmark": "stereoset",
+  "n_examples": 20,
+  "max_samples": 20,
+  "timestamp": "2026-06-09T11:45:12.405221",
+  "overall_stereotype_score": 25.0
+}

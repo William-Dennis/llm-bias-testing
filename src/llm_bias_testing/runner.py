@@ -8,12 +8,12 @@ from llm_bias_testing.registry import MODELS, get_model
 
 logger = logging.getLogger(__name__)
 
-BENCHMARK_CHOICES = ["cv-screening", "stereoset", "crows-pairs", "bbq", "all"]
+BENCHMARK_CHOICES = ["cv-screening", "stereoset", "crows-pairs", "bbq", "demographic-bias", "all"]
 
 
 def get_benchmarks(benchmark: str) -> list[str]:
     if benchmark == "all":
-        return ["cv-screening", "stereoset", "crows-pairs", "bbq"]
+        return ["cv-screening", "stereoset", "demographic-bias"]
     return [benchmark]
 
 
@@ -93,6 +93,9 @@ def run_benchmark_for_model(
             elif bench == "bbq":
                 from llm_bias_testing.benchmarks.bbq import BBQBiasBenchmark
                 bm = BBQBiasBenchmark()
+            elif bench == "demographic-bias":
+                from llm_bias_testing.benchmarks.demographic_bias import DemographicBiasBenchmark
+                bm = DemographicBiasBenchmark()
             else:
                 logger.error("Unknown benchmark: %s", bench)
                 continue
