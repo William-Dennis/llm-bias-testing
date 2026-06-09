@@ -1,7 +1,0 @@
-{
-  "model": "smollm2-135m",
-  "ollama_tag": "smollm2:135m",
-  "benchmark": "stereoset",
-  "n_examples": 20,
-  "overall_stereotype_score": 5.0
-}

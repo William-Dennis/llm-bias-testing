@@ -1,8 +1,0 @@
-{
-  "model": "smollm2-135m",
-  "ollama_tag": "smollm2:135m",
-  "benchmark": "cv-screening",
-  "n_records": 2,
-  "mean_score": 82.5,
-  "std_score": 3.5355339059327378
-}

@@ -1,9 +1,0 @@
-{
-  "model": "qwen25-05b",
-  "ollama_tag": "qwen2.5:0.5b",
-  "benchmark": "stereoset",
-  "n_examples": 20,
-  "max_samples": 20,
-  "timestamp": "2026-06-09T11:51:04.989319",
-  "overall_stereotype_score": 35.0
-}
