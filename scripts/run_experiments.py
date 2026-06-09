@@ -5,6 +5,7 @@ Usage:
     python run_experiments.py --benchmarks cv-screening,stereoset --max-samples 10 --timeout 600
 """
 import argparse
+import atexit
 import json
 import logging
 import os
@@ -35,17 +36,28 @@ SLM_MODELS = [
 ]
 
 
+_ollama_server = None
+
+
 def _ensure_ollama():
-    """Check if Ollama is responding; restart if not."""
+    """Check if Ollama is responding; restart if not (singleton)."""
+    global _ollama_server
     try:
         subprocess.run(
             ["ollama", "list"], capture_output=True, check=True, timeout=10
         )
     except Exception:
+        # Stop old server and unregister its atexit handler
+        if _ollama_server is not None:
+            atexit.unregister(_ollama_server.stop)
+            try:
+                _ollama_server.stop()
+            except Exception:
+                pass
         logger.warning("Ollama not responding, restarting...")
         from llm_bias_testing.ollama_setup import OllamaServer
-        server = OllamaServer(kill_existing=True)
-        server.start()
+        _ollama_server = OllamaServer(kill_existing=True)
+        _ollama_server.start()
         logger.info("Ollama restarted")
 
 
@@ -59,8 +71,7 @@ def run_benchmarks(models, benchmarks, output_dir, max_samples, timeout):
             continue
 
         # Ensure Ollama is alive before each model (restart if crashed)
-        _ensure_ollama()
-        
+
         for benchmark in benchmarks:
             logger.info("=" * 60)
             logger.info("Running %s / %s", model_name, benchmark)
@@ -74,7 +85,10 @@ def run_benchmarks(models, benchmarks, output_dir, max_samples, timeout):
                     summary = json.load(f)
                 results_summary.append(summary)
                 continue
-            
+
+            # Ensure Ollama is alive before running the benchmark
+            _ensure_ollama()
+
             cmd = [
                 sys.executable, "-m", "llm_bias_testing.runner",
                 model_name,
