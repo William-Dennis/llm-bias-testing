@@ -2,7 +2,7 @@ import re
 import time
 from tqdm import tqdm
 
-from llm_bias_testing.call_api import Model
+from slm_bias_testing.call_api import Model
 
 
 from examples.cvs import cvs

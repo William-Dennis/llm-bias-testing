@@ -2,8 +2,8 @@ import logging
 
 import ollama
 
-from llm_bias_testing.ollama_setup import OllamaServer
-from llm_bias_testing.transformers import Model as TransformerModel
+from slm_bias_testing.ollama_setup import OllamaServer
+from slm_bias_testing.transformers import Model as TransformerModel
 
 logger = logging.getLogger(__name__)
 

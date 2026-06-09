@@ -4,8 +4,8 @@ Scans results/ for completed evaluations, merges with model registry
 metadata, and produces publication-quality trend plots.
 
 Usage:
-    uv run python -m llm_bias_testing.temporal
-    uv run python -m llm_bias_testing.temporal --results-dir results/2026-06-10_0200
+    uv run python -m slm_bias_testing.temporal
+    uv run python -m slm_bias_testing.temporal --results-dir results/2026-06-10_0200
 """
 
 import argparse
@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats as sp_stats
 
-from llm_bias_testing.registry import MODELS
+from slm_bias_testing.registry import MODELS
 
 # Score field names used by each benchmark
 BENCHMARK_SCORE_FIELDS = {

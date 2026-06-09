@@ -14,7 +14,7 @@ import sys
 import time
 from datetime import datetime
 
-from llm_bias_testing.registry import MODELS
+from slm_bias_testing.registry import MODELS
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -24,7 +24,6 @@ SLM_MODELS = [
     "smollm-135m",   # 2024-07, 135M
     "smollm-360m",   # 2024-07, 360M
     "qwen25-05b",    # 2024-09, 500M
-    "qwen25-15b",    # 2024-09, 1.5B
     "smollm2-135m",  # 2024-11, 135M
     "smollm2-360m",  # 2024-11, 360M
     "gemma3-270m",   # 2025-03, 270M
@@ -55,7 +54,7 @@ def _ensure_ollama():
             except Exception:
                 pass
         logger.warning("Ollama not responding, restarting...")
-        from llm_bias_testing.ollama_setup import OllamaServer
+        from slm_bias_testing.ollama_setup import OllamaServer
         _ollama_server = OllamaServer(kill_existing=True)
         _ollama_server.start()
         logger.info("Ollama restarted")
@@ -90,7 +89,7 @@ def run_benchmarks(models, benchmarks, output_dir, max_samples, timeout):
             _ensure_ollama()
 
             cmd = [
-                sys.executable, "-m", "llm_bias_testing.runner",
+                sys.executable, "-m", "slm_bias_testing.runner",
                 model_name,
                 "--benchmark", benchmark,
                 "--output-dir", output_dir,

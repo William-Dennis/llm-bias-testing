@@ -7,7 +7,7 @@ Run your own evaluations, compare models, and visualize trends.
 
 ```bash
 uv sync --extra dev
-uv run python -m llm_bias_testing.runner smollm2-135m --benchmark all
+uv run python -m slm_bias_testing.runner smollm2-135m --benchmark all
 ```
 
 ---
@@ -85,10 +85,10 @@ For smollm2-135m: mean score 82.5/100. Statistical analysis saves to `results/an
 uv sync --extra dev
 
 # Run all benchmarks on one model
-uv run python -m llm_bias_testing.runner smollm2-135m --benchmark all
+uv run python -m slm_bias_testing.runner smollm2-135m --benchmark all
 
 # Run a specific benchmark with limited samples
-uv run python -m llm_bias_testing.runner smollm2-135m --benchmark stereoset --max-samples 20
+uv run python -m slm_bias_testing.runner smollm2-135m --benchmark stereoset --max-samples 20
 
 # Batch: multiple models, one benchmark
 uv run python scripts/run_experiments.py \
@@ -97,7 +97,7 @@ uv run python scripts/run_experiments.py \
   --max-samples 20
 
 # Temporal trend analysis
-uv run python -m llm_bias_testing.temporal
+uv run python -m slm_bias_testing.temporal
 ```
 
 ### Full overnight eval
@@ -130,7 +130,7 @@ figs/
 ## Project structure
 
 ```
-src/llm_bias_testing/
+src/slm_bias_testing/
   registry.py       — Model definitions (name → ollama tag)
   runner.py         — CLI entry point for running benchmarks
   benchmark.py      — CV screening benchmark

@@ -1,6 +1,6 @@
 import pytest
 
-from llm_bias_testing.registry import MODELS, get_model, list_models, models_by_family
+from slm_bias_testing.registry import MODELS, get_model, list_models, models_by_family
 
 
 class TestGetModel:

@@ -4,7 +4,7 @@ import logging
 import os
 import subprocess
 
-from llm_bias_testing.registry import MODELS, get_model
+from slm_bias_testing.registry import MODELS, get_model
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ def run_benchmark_for_model(
         logger.info("Running benchmark %s with model %s ...", bench, model_name)
 
         if bench == "cv-screening":
-            from llm_bias_testing.benchmark import run_benchmark
+            from slm_bias_testing.benchmark import run_benchmark
 
             df = run_benchmark(
                 model_name=ollama_tag,
@@ -80,24 +80,24 @@ def run_benchmark_for_model(
                 "std_score": float(df["score"].std()) if df is not None and not df.empty else None,
             }
         else:
-            from llm_bias_testing.call_api import Model as ApiModel
+            from slm_bias_testing.call_api import Model as ApiModel
 
             model = ApiModel(model_name=ollama_tag)
 
             if bench == "stereoset":
-                from llm_bias_testing.benchmarks.stereoset import StereoSetBenchmark
+                from slm_bias_testing.benchmarks.stereoset import StereoSetBenchmark
                 bm = StereoSetBenchmark()
             elif bench == "crows-pairs":
-                from llm_bias_testing.benchmarks.crows_pairs import CrowsPairsBenchmark
+                from slm_bias_testing.benchmarks.crows_pairs import CrowsPairsBenchmark
                 bm = CrowsPairsBenchmark()
             elif bench == "bbq":
-                from llm_bias_testing.benchmarks.bbq import BBQBiasBenchmark
+                from slm_bias_testing.benchmarks.bbq import BBQBiasBenchmark
                 bm = BBQBiasBenchmark()
             elif bench == "demographic-bias":
-                from llm_bias_testing.benchmarks.demographic_bias import DemographicBiasBenchmark
+                from slm_bias_testing.benchmarks.demographic_bias import DemographicBiasBenchmark
                 bm = DemographicBiasBenchmark()
             elif bench == "winobias":
-                from llm_bias_testing.benchmarks.winobias import WinoBiasBenchmark
+                from slm_bias_testing.benchmarks.winobias import WinoBiasBenchmark
                 bm = WinoBiasBenchmark()
             else:
                 logger.error("Unknown benchmark: %s", bench)

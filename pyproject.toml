@@ -1,5 +1,5 @@
 [project]
-name = "llm-bias-testing"
+name = "slm-bias-testing"
 version = "0.1.0"
 description = "Bias evaluation benchmarks for small language models"
 readme = "README.md"

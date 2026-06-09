@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from llm_bias_testing.call_api import Model, LLM_MODEL, PROVIDER
+from slm_bias_testing.call_api import Model, LLM_MODEL, PROVIDER
 
 
 class TestModelInit:

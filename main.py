@@ -2,8 +2,8 @@ import argparse
 import logging
 import os
 
-from llm_bias_testing.benchmark import run_benchmark
-from llm_bias_testing.registry import MODELS, get_model
+from slm_bias_testing.benchmark import run_benchmark
+from slm_bias_testing.registry import MODELS, get_model
 
 logger = logging.getLogger(__name__)
 

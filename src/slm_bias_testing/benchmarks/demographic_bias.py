@@ -8,7 +8,7 @@ import re
 
 from tqdm import tqdm
 
-from llm_bias_testing.benchmarks import BaseBenchmark
+from slm_bias_testing.benchmarks import BaseBenchmark
 
 logger = logging.getLogger(__name__)
 
