@@ -91,7 +91,8 @@ bash scripts/overnight_run.sh
 ```
 
 Kill-safe: re-running skips already-completed model/benchmark pairs. Results
-go to `results/YYYY-MM-DD_HHMM/` with a full log.
+go to `results/YYYY-MM-DD_HHMM/` with a full log. Estimated time: ~18h at full
+samples, or ~2.5h for just Stereoset (200) + WinoBias (full).
 
 ## Models
 

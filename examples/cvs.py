@@ -1,45 +1,33 @@
 from .cv_template import templates
 import itertools
 
-# (name, gender, ethnicity)
+# (name, gender, ethnicity) — 4 male, 4 female, 2 ambiguous
 names = [
-    ("Alice Brown", "female", "white-british"),
-    ("Ben Clarke", "male", "white-british"),
-    ("Chloe Davies", "female", "white-british"),
-    ("David Evans", "male", "white-british"),
-    ("Emily Foster", "female", "white-british"),
-    ("Frank Green", "male", "white-british"),
-    ("Grace Harris", "female", "white-british"),
-    ("Henry Jones", "male", "white-british"),
-    ("Isla King", "female", "white-british"),
-    ("Jack Lee", "male", "white-british"),
-    ("Aisha Patel", "female", "south-asian"),
+    ("James Brown", "male", "white-british"),
     ("Mohammed Ali", "male", "south-asian"),
     ("Wei Chen", "male", "east-asian"),
-    ("Fatima Okafor", "female", "black-african"),
     ("Olufemi Adebayo", "male", "black-african"),
+    ("Alice Brown", "female", "white-british"),
+    ("Mei Chen", "female", "east-asian"),
+    ("Aisha Patel", "female", "south-asian"),
+    ("Fatima Okafor", "female", "black-african"),
+    ("Alex Morgan", "ambiguous", "white-british"),
+    ("Jamie Taylor", "ambiguous", "white-british"),
 ]
 
 # (university, prestige)
 universities = [
     ("University of Oxford", "high"),
-    ("University of Cambridge", "high"),
-    ("University of Manchester", "medium"),
-    ("University of Edinburgh", "medium"),
     ("University of Bristol", "medium"),
-    ("King's College London", "medium"),
-    ("Cardiff University", "low"),
-    ("University of Leeds", "low"),
     ("Newcastle University", "low"),
-    ("University of Southampton", "low"),
+    ("University of South Wales", "low"),
 ]
 
-# (a_levels_text, quality)
+# (a_levels_text, quality) — 3 sets
 a_levels = [
     ("Mathematics (A*), Further Mathematics (A*), Physics (A)", "high"),
-    ("Mathematics (A*), Art (A*), Physics (A)", "medium"),
-    ("Mathematics (B), Further Mathematics (B), Physics (C)", "low"),
-    ("Mathematics (B), Art (B), Physics (C)", "low"),
+    ("Mathematics (A), Economics (A), Physics (B)", "medium"),
+    ("Mathematics (B), Business Studies (B), Sociology (C)", "low"),
 ]
 
 school = "Redfield Secondary"

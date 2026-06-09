@@ -3,7 +3,7 @@ from examples.cvs import cvs
 
 class TestCVs:
     def test_cvs_count(self):
-        assert len(cvs) == 3000
+        assert len(cvs) == 600
 
     def test_cv_has_metadata(self):
         for cv in cvs:
