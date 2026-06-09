@@ -35,21 +35,31 @@ SLM_MODELS = [
 ]
 
 
+def _ensure_ollama():
+    """Check if Ollama is responding; restart if not."""
+    try:
+        subprocess.run(
+            ["ollama", "list"], capture_output=True, check=True, timeout=10
+        )
+    except Exception:
+        logger.warning("Ollama not responding, restarting...")
+        from llm_bias_testing.ollama_setup import OllamaServer
+        server = OllamaServer(kill_existing=True)
+        server.start()
+        logger.info("Ollama restarted")
+
+
 def run_benchmarks(models, benchmarks, output_dir, max_samples, timeout):
     """Run benchmarks across models sequentially."""
     results_summary = []
-    
+
     for model_name in models:
         if model_name not in MODELS:
             logger.warning("Unknown model: %s, skipping", model_name)
             continue
-        
-        # Check if ollama is running
-        try:
-            subprocess.run(["ollama", "list"], capture_output=True, check=True, timeout=10)
-        except Exception:
-            logger.error("Ollama server not available, skipping %s", model_name)
-            continue
+
+        # Ensure Ollama is alive before each model (restart if crashed)
+        _ensure_ollama()
         
         for benchmark in benchmarks:
             logger.info("=" * 60)
@@ -91,8 +101,8 @@ def run_benchmarks(models, benchmarks, output_dir, max_samples, timeout):
             except subprocess.TimeoutExpired:
                 logger.error("Timed out after %ds", timeout)
             
-            # Small delay between runs
-            time.sleep(2)
+            # Delay between runs to let Ollama stabilise
+            time.sleep(5)
     
     return results_summary
 
