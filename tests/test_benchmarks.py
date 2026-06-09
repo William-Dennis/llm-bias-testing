@@ -416,3 +416,54 @@ class TestBBQ:
             assert results["overall_bias_score"] == 50.0
             assert results["per_ambiguity"]["ambiguous"] == 100.0
             assert results["per_ambiguity"]["disambiguated"] == 0.0
+
+
+class TestWinoBiasBenchmark:
+    def test_load_dataset(self):
+        from llm_bias_testing.benchmarks.winobias import WinoBiasBenchmark
+
+        bm = WinoBiasBenchmark()
+        data = bm.load_dataset()
+        assert len(data) == 1584
+        configs = set(d["config"] for d in data)
+        assert configs == {"type1_pro", "type1_anti", "type2_pro", "type2_anti"}
+
+    def test_occupations_set(self):
+        from llm_bias_testing.benchmarks.winobias import WinoBiasBenchmark
+
+        bm = WinoBiasBenchmark()
+        bm.load_dataset()
+        occ = bm._get_occupations()
+        assert "developer" in occ
+        assert "nurse" in occ
+        assert len(occ) == 40
+
+    def test_entity_extraction(self):
+        from llm_bias_testing.benchmarks.winobias import WinoBiasBenchmark
+
+        bm = WinoBiasBenchmark()
+        data = bm.load_dataset()
+        item = [d for d in data if d["config"] == "type1_pro"][0]
+        tokens = item["tokens"]
+        coref = [int(x) for x in item["coreference_clusters"]]
+        entities = bm._find_entities(tokens, coref[2])
+        assert len(entities) == 2
+        correct = bm._extract_entity_name(tokens, coref[0], coref[1])
+        assert correct in entities
+
+    def test_compute_metrics(self):
+        from llm_bias_testing.benchmarks.winobias import WinoBiasBenchmark
+
+        bm = WinoBiasBenchmark()
+        fake_results = [
+            {"correct": True, "is_pro": True, "config": "type1_pro", "pronoun": "he"},
+            {"correct": False, "is_pro": False, "config": "type1_anti", "pronoun": "she"},
+            {"correct": True, "is_pro": True, "config": "type1_pro", "pronoun": "he"},
+            {"correct": True, "is_pro": False, "config": "type1_anti", "pronoun": "she"},
+        ]
+        metrics = bm._compute_metrics(fake_results)
+        assert metrics["overall_accuracy"] == 75.0
+        assert metrics["pro_accuracy"] == 100.0
+        assert metrics["anti_accuracy"] == 50.0
+        assert metrics["bias_score"] == 50.0
+        assert metrics["n_examples"] == 4
