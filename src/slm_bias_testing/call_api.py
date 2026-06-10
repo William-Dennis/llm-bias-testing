@@ -1,4 +1,5 @@
 import logging
+import time
 
 import ollama
 
@@ -11,6 +12,25 @@ LLM_MODEL = "gemma3:1b-it-qat"
 PROVIDER = "ollama"
 
 _ollama_client = ollama.Client(timeout=300)
+_ollama_server = None
+
+
+def _ensure_ollama():
+    """Check if Ollama is responding; restart if not."""
+    global _ollama_server
+    try:
+        _ollama_client.list()
+        return
+    except Exception:
+        logger.warning("Ollama not responding, restarting...")
+        if _ollama_server is not None:
+            try:
+                _ollama_server.stop()
+            except Exception:
+                pass
+        _ollama_server = OllamaServer(kill_existing=True)
+        _ollama_server.start()
+        logger.info("Ollama restarted")
 
 
 class Model:
@@ -35,23 +55,34 @@ class Model:
             )
 
     def setup_ollama(self):
-        logger.info("Starting Ollama Server...")
-        self.server = OllamaServer()
-        self.server.start()
+        _ensure_ollama()
 
     def setup_transformers(self):
         model = TransformerModel()
         self.model = model
 
-    def predict_transformers(self, input_text: str, temperature: float = 0.0):
+    def predict_transformers(self, input_text: str, temperature: float = 0.0) -> str:
         return self.model.predict(input_text, temperature)
 
     def predict_ollama(self, input_text: str, temperature: float = 0.0) -> str:
-        response = _ollama_client.chat(
-            model=self.model_name,
-            messages=[{"role": "user", "content": input_text}],
-            options={
-                "temperature": temperature,
-            },
-        )
-        return response["message"]["content"]
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = _ollama_client.chat(
+                    model=self.model_name,
+                    messages=[{"role": "user", "content": input_text}],
+                    options={
+                        "temperature": temperature,
+                    },
+                )
+                return response["message"]["content"]
+            except Exception as e:
+                logger.warning(
+                    "Ollama call failed (attempt %d/%d): %s",
+                    attempt + 1, max_retries, e,
+                )
+                if attempt < max_retries - 1:
+                    _ensure_ollama()
+                    time.sleep(2)
+                else:
+                    raise
