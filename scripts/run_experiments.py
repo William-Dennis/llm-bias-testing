@@ -36,14 +36,17 @@ SLM_MODELS = [
 
 def _check_ollama():
     """Quick check that Ollama is responding."""
-    try:
-        subprocess.run(
-            ["ollama", "list"], capture_output=True, check=True, timeout=10
-        )
-        return True
-    except Exception:
-        logger.error("Ollama not responding — run 'ollama serve' first")
-        return False
+    for attempt in range(5):
+        try:
+            subprocess.run(
+                ["ollama", "list"], capture_output=True, check=True, timeout=10
+            )
+            return True
+        except Exception:
+            if attempt < 4:
+                time.sleep(2)
+    logger.error("Ollama not responding after 5 attempts — run 'ollama serve' first")
+    return False
 
 
 def run_benchmarks(models, benchmarks, output_dir, max_samples, timeout):
