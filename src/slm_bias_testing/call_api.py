@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import os
 import time
 from typing import TYPE_CHECKING
 
@@ -18,6 +19,15 @@ logger = logging.getLogger(__name__)
 
 LLM_MODEL = "gemma3:1b-it-qat"
 PROVIDER = "ollama"
+
+# Default context window. Ollama 0.19+ uses MLX on Apple Silicon with intelligent
+# KV cache checkpoints — setting an explicit num_ctx lets Ollama optimise cache
+# allocation.  See: https://ollama.com/blog/mlx
+DEFAULT_NUM_CTX = int(os.environ.get("SLM_NUM_CTX", "2048"))
+
+# How long to keep the model loaded after last API call (seconds).
+# Longer values reduce model reload overhead across sequential benchmark items.
+DEFAULT_KEEP_ALIVE = float(os.environ.get("SLM_KEEP_ALIVE", "5"))
 
 
 class OllamaClient:
@@ -54,9 +64,13 @@ class Model:
         model_name: str = LLM_MODEL,
         provider: str = PROVIDER,
         ollama_client: OllamaClient | None = None,
+        num_ctx: int | None = None,
+        keep_alive: float | None = None,
     ) -> None:
         self.model_name = model_name
         self.provider = provider
+        self.num_ctx = num_ctx if num_ctx is not None else DEFAULT_NUM_CTX
+        self.keep_alive = keep_alive if keep_alive is not None else DEFAULT_KEEP_ALIVE
         self._ollama_client = ollama_client or OllamaClient()
         self._transformer_model: TransformerModel | None = None
 
@@ -82,7 +96,11 @@ class Model:
                 response = self._ollama_client.client.chat(
                     model=self.model_name,
                     messages=[{"role": "user", "content": input_text}],
-                    options={"temperature": temperature},
+                    options={
+                        "temperature": temperature,
+                        "num_ctx": self.num_ctx,
+                    },
+                    keep_alive=self.keep_alive,
                 )
                 return response["message"]["content"]  # type: ignore[no-any-return]
             except Exception as e:
@@ -93,7 +111,9 @@ class Model:
                     e,
                 )
                 if attempt < max_retries - 1:
-                    self._ollama_client.ensure_running()
+                    # Only restart on actual connection failure, not on every error
+                    if "connect" in str(e).lower() or "refused" in str(e).lower():
+                        self._ollama_client.ensure_running()
                     time.sleep(2)
                 else:
                     raise
