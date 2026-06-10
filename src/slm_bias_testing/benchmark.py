@@ -130,7 +130,8 @@ def run_benchmark(
     if job_desc is None:
         from examples.job_description import job_description as job_desc
 
-    assert cv_data is not None
+    if cv_data is None:
+        raise ValueError("cv_data must not be None after import")
     if max_samples is not None:
         cv_data = cv_data[:max_samples]
 

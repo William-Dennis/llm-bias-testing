@@ -212,7 +212,7 @@ def plot_family_comparison(df: pd.DataFrame, output_dir: str = "figs") -> str:
         ax.barh(
             range(len(families)),
             families["mean"],
-            xerr=families["std"] / np.sqrt(families["count"].clip(upper=1)),
+            xerr=families["std"] / np.sqrt(families["count"].clip(lower=1)),
             tick_label=families.index,
             color="steelblue",
             alpha=0.8,
