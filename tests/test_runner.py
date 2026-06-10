@@ -7,9 +7,9 @@ class TestRunBenchmarkForModel:
     @patch("slm_bias_testing.runner.pull_model", return_value=True)
     @patch("slm_bias_testing.runner.get_model")
     def test_skip_existing_results(self, mock_get_model, mock_pull):
+        import json
         import os
         import tempfile
-        import json
 
         mock_get_model.return_value = {"ollama_tag": "smollm:135m"}
 

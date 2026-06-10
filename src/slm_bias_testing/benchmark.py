@@ -1,28 +1,34 @@
 """Core benchmark logic — importable from the package."""
+
+from __future__ import annotations
+
+import hashlib
 import logging
 import os
 import re
 import textwrap
-import hashlib
+from typing import Any
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-from slm_bias_testing.call_api import Model
 from slm_bias_testing.analysis import build_summary_table
+from slm_bias_testing.call_api import Model
 
 logger = logging.getLogger(__name__)
 
 SCORE_PATTERN = re.compile(r"(\d{1,3})/100")
 
 
-def sha256_hash(text):
+def sha256_hash(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def plot_and_save_boxplots(df, variables, output_dir="plots", wrap_width=10):
+def plot_and_save_boxplots(
+    df: pd.DataFrame, variables: list[str], output_dir: str = "plots", wrap_width: int = 10
+) -> None:
     os.makedirs(output_dir, exist_ok=True)
 
     for var in variables:
@@ -36,9 +42,7 @@ def plot_and_save_boxplots(df, variables, output_dir="plots", wrap_width=10):
             for i, cat in enumerate(order):
                 plt.scatter(i, means[cat], color="red", zorder=10, s=50, edgecolor="k")
 
-            wrapped_labels = [
-                "\n".join(textwrap.wrap(str(label), wrap_width)) for label in order
-            ]
+            wrapped_labels = ["\n".join(textwrap.wrap(str(label), wrap_width)) for label in order]
             plt.xticks(ticks=range(len(order)), labels=wrapped_labels, rotation=0)
 
             plt.title(f"Score Distribution by {var.capitalize()}")
@@ -50,13 +54,15 @@ def plot_and_save_boxplots(df, variables, output_dir="plots", wrap_width=10):
             plt.close()
 
 
-def load_existing_records(filepath="records.csv"):
+def load_existing_records(filepath: str = "records.csv") -> pd.DataFrame:
     if os.path.exists(filepath):
         try:
             df = pd.read_csv(filepath, index_col=0)
             required = {"run", "score"}
             if not required.issubset(df.columns):
-                logger.warning("records.csv missing columns %s — starting fresh", required - set(df.columns))
+                logger.warning(
+                    "records.csv missing columns %s — starting fresh", required - set(df.columns)
+                )
                 return pd.DataFrame()
             return df
         except Exception:
@@ -64,11 +70,18 @@ def load_existing_records(filepath="records.csv"):
     return pd.DataFrame()
 
 
-def save_records(df, filepath="records.csv"):
+def save_records(df: pd.DataFrame, filepath: str = "records.csv") -> None:
     df.to_csv(filepath)
 
 
-def process_cv_run(model, cv, run, base_prompt, seen_set, temperature=1):
+def process_cv_run(
+    model: Model,
+    cv: dict[str, Any],
+    run: int,
+    base_prompt: str,
+    seen_set: set[tuple[str, int]],
+    temperature: float = 1,
+) -> dict[str, Any] | None:
     metadata = cv["metadata"]
     prompt = base_prompt + f"\nCandidate CV\n{cv['cv']}"
     key = sha256_hash(prompt)
@@ -92,7 +105,15 @@ def process_cv_run(model, cv, run, base_prompt, seen_set, temperature=1):
     return record
 
 
-def run_benchmark(model_name, output_dir="results", timeout=1800, cv_data=None, job_desc=None, max_samples=None, n_runs=10):
+def run_benchmark(
+    model_name: str,
+    output_dir: str = "results",
+    timeout: int = 1800,
+    cv_data: list[dict[str, Any]] | None = None,
+    job_desc: str | None = None,
+    max_samples: int | None = None,
+    n_runs: int = 10,
+) -> pd.DataFrame:
     """Run CV screening benchmark for a single model.
 
     Args:
@@ -109,6 +130,8 @@ def run_benchmark(model_name, output_dir="results", timeout=1800, cv_data=None, 
     if job_desc is None:
         from examples.job_description import job_description as job_desc
 
+    if cv_data is None:
+        raise ValueError("cv_data must not be None after import")
     if max_samples is not None:
         cv_data = cv_data[:max_samples]
 
@@ -119,7 +142,7 @@ def run_benchmark(model_name, output_dir="results", timeout=1800, cv_data=None, 
 
     seen_set = set()
     if not existing_df.empty:
-        seen_set = set(zip(existing_df["key"], existing_df["run"]))
+        seen_set = set(zip(existing_df["key"], existing_df["run"], strict=True))
 
     logger.info("Starting Model: %s", model_name)
     model = Model(model_name=model_name)
@@ -140,9 +163,7 @@ def run_benchmark(model_name, output_dir="results", timeout=1800, cv_data=None, 
     records = []
     for cv in tqdm(cv_data):
         for run in range(n_runs):
-            record = process_cv_run(
-                model, cv, run, base_prompt, seen_set, temperature
-            )
+            record = process_cv_run(model, cv, run, base_prompt, seen_set, temperature)
             if record:
                 records.append(record)
 
@@ -152,7 +173,13 @@ def run_benchmark(model_name, output_dir="results", timeout=1800, cv_data=None, 
         save_records(existing_df, records_filepath)
 
         variables = ["name", "university", "a_levels"]
-        demographic_vars = ["template_name", "name_gender", "name_ethnicity", "university_prestige", "a_level_quality"]
+        demographic_vars = [
+            "template_name",
+            "name_gender",
+            "name_ethnicity",
+            "university_prestige",
+            "a_level_quality",
+        ]
         all_plot_vars = list(dict.fromkeys(variables + demographic_vars))
         plot_and_save_boxplots(existing_df, all_plot_vars, output_dir=plots_dir)
 
@@ -162,4 +189,8 @@ def run_benchmark(model_name, output_dir="results", timeout=1800, cv_data=None, 
         with open(os.path.join(output_dir, "analysis_summary.txt"), "w") as f:
             f.write(summary)
 
-    return existing_df if not existing_df.empty else (pd.DataFrame(records) if records else pd.DataFrame())
+    return (
+        existing_df
+        if not existing_df.empty
+        else (pd.DataFrame(records) if records else pd.DataFrame())
+    )

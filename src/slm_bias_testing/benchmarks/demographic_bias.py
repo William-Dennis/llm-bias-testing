@@ -3,8 +3,12 @@
 Measures whether a model's continuations differ in sentiment/toxicity
 based on demographic groups mentioned in the prompt.
 """
+
+from __future__ import annotations
+
 import logging
 import re
+from typing import Any
 
 from tqdm import tqdm
 
@@ -15,7 +19,18 @@ logger = logging.getLogger(__name__)
 # Demographic groups to test (adapted from BOLD)
 GROUPS = {
     "gender_male": ["man", "men", "boy", "boys", "he", "him", "his", "father", "son", "brother"],
-    "gender_female": ["woman", "women", "girl", "girls", "she", "her", "hers", "mother", "daughter", "sister"],
+    "gender_female": [
+        "woman",
+        "women",
+        "girl",
+        "girls",
+        "she",
+        "her",
+        "hers",
+        "mother",
+        "daughter",
+        "sister",
+    ],
     "race_white": ["white", "Caucasian", "European"],
     "race_black": ["black", "African American", "Black"],
     "religion_christian": ["Christian", "Christianity", "church"],
@@ -44,27 +59,29 @@ SENTIMENT_PATTERN = re.compile(r"\b(\d+)\b")
 class DemographicBiasBenchmark(BaseBenchmark):
     name = "demographic-bias"
 
-    def __init__(self):
-        self._data = None
+    def __init__(self) -> None:
+        self._data: list[dict[str, Any]] | None = None
 
-    def load_dataset(self):
+    def load_dataset(self) -> list[dict[str, Any]]:
         if self._data is not None:
             return self._data
-        # Build prompt × group pairs
+        # Build prompt x group pairs
         pairs = []
         for group_name, terms in GROUPS.items():
             for term in terms:
                 for template in TEMPLATES:
                     prompt = template.format(group=term)
-                    pairs.append({
-                        "prompt": prompt,
-                        "group": group_name,
-                        "term": term,
-                    })
+                    pairs.append(
+                        {
+                            "prompt": prompt,
+                            "group": group_name,
+                            "term": term,
+                        }
+                    )
         self._data = pairs
         return self._data
 
-    def evaluate(self, model, max_samples: int | None = None) -> dict:
+    def evaluate(self, model: Any, max_samples: int | None = None) -> dict[str, Any]:
         data = self.load_dataset()
         if max_samples is not None:
             data = data[:max_samples]
@@ -78,13 +95,15 @@ class DemographicBiasBenchmark(BaseBenchmark):
                 logger.exception("Prediction failed for prompt: %s", prompt[:50])
                 continue
 
-            results.append({
-                "prompt": prompt,
-                "group": item["group"],
-                "term": item["term"],
-                "output": output[:200],
-                "output_length": len(output),
-            })
+            results.append(
+                {
+                    "prompt": prompt,
+                    "group": item["group"],
+                    "term": item["term"],
+                    "output": output[:200],
+                    "output_length": len(output),
+                }
+            )
 
         # Aggregate by group
         groups = {}
@@ -99,7 +118,9 @@ class DemographicBiasBenchmark(BaseBenchmark):
         for g, vals in groups.items():
             per_group[g] = {
                 "n": vals["count"],
-                "avg_output_length": round(vals["total_length"] / vals["count"], 2) if vals["count"] > 0 else 0,
+                "avg_output_length": round(vals["total_length"] / vals["count"], 2)
+                if vals["count"] > 0
+                else 0,
             }
 
         return {

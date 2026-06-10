@@ -1,5 +1,9 @@
 """Statistical analysis for CV screening benchmark."""
+
+from __future__ import annotations
+
 import logging
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -8,7 +12,7 @@ from scipy import stats as sp_stats
 logger = logging.getLogger(__name__)
 
 
-def group_summary(df, group_col, score_col="score"):
+def group_summary(df: pd.DataFrame, group_col: str, score_col: str = "score") -> pd.DataFrame:
     """Mean, std, count, and 95% CI per group."""
     if group_col not in df.columns or df[group_col].isna().all():
         return pd.DataFrame()
@@ -30,19 +34,21 @@ def group_summary(df, group_col, score_col="score"):
     return summary
 
 
-def cohens_d(series1, series2):
+def cohens_d(series1: pd.Series, series2: pd.Series) -> float:
     """Cohen's d for two independent groups (pooled standard deviation)."""
     n1, n2 = len(series1), len(series2)
     if n1 < 2 or n2 < 2:
         return 0.0
     s1, s2 = series1.std(ddof=1), series2.std(ddof=1)
-    pooled = np.sqrt(((n1 - 1) * s1 ** 2 + (n2 - 1) * s2 ** 2) / (n1 + n2 - 2))
+    pooled = np.sqrt(((n1 - 1) * s1**2 + (n2 - 1) * s2**2) / (n1 + n2 - 2))
     if pooled == 0:
         return 0.0
-    return (series1.mean() - series2.mean()) / pooled
+    return (series1.mean() - series2.mean()) / pooled  # type: ignore[no-any-return]
 
 
-def pairwise_comparisons(df, group_col, score_col="score"):
+def pairwise_comparisons(
+    df: pd.DataFrame, group_col: str, score_col: str = "score"
+) -> pd.DataFrame:
     """Cohen's d and t-test for all pairs of groups."""
     if group_col not in df.columns:
         return pd.DataFrame()
@@ -58,22 +64,26 @@ def pairwise_comparisons(df, group_col, score_col="score"):
                 continue
             d = cohens_d(g1, g2)
             t_stat, p_val = sp_stats.ttest_ind(g1, g2, equal_var=False)
-            rows.append({
-                "group_col": group_col,
-                "group1": groups[i],
-                "group2": groups[j],
-                "cohens_d": round(d, 3),
-                "t_statistic": round(t_stat, 3),
-                "p_value": round(p_val, 4),
-                "mean1": round(g1.mean(), 2),
-                "mean2": round(g2.mean(), 2),
-                "n1": len(g1),
-                "n2": len(g2),
-            })
+            rows.append(
+                {
+                    "group_col": group_col,
+                    "group1": groups[i],
+                    "group2": groups[j],
+                    "cohens_d": round(d, 3),
+                    "t_statistic": round(t_stat, 3),
+                    "p_value": round(p_val, 4),
+                    "mean1": round(g1.mean(), 2),
+                    "mean2": round(g2.mean(), 2),
+                    "n1": len(g1),
+                    "n2": len(g2),
+                }
+            )
     return pd.DataFrame(rows)
 
 
-def variance_breakdown(df, factors, score_col="score"):
+def variance_breakdown(
+    df: pd.DataFrame, factors: list[str], score_col: str = "score"
+) -> dict[str, Any]:
     """Proportion of total variance explained by each factor."""
     if score_col not in df.columns:
         return {}
@@ -96,7 +106,9 @@ def variance_breakdown(df, factors, score_col="score"):
     return results
 
 
-def per_cv_variance(df, key_col="key", score_col="score"):
+def per_cv_variance(
+    df: pd.DataFrame, key_col: str = "key", score_col: str = "score"
+) -> tuple[pd.Series, dict[str, Any]]:
     """Std deviation per CV across runs, plus overall summary."""
     if key_col not in df.columns:
         return pd.Series(dtype=float), {}
@@ -114,21 +126,23 @@ def per_cv_variance(df, key_col="key", score_col="score"):
     return cv_std, summary
 
 
-def build_summary_table(df, group_cols, score_col="score"):
+def build_summary_table(df: pd.DataFrame, group_cols: list[str], score_col: str = "score") -> str:
     """Build formatted summary string with group means, CI, effect sizes."""
     lines = []
     lines.append("=" * 90)
     lines.append("STATISTICAL ANALYSIS")
     lines.append("=" * 90)
 
-    cv_std, cv_summary = per_cv_variance(df, key_col="key", score_col=score_col)
+    _cv_std, cv_summary = per_cv_variance(df, key_col="key", score_col=score_col)
     if cv_summary:
         lines.append("\n--- Per-CV Variance (std across runs) ---")
         lines.append(f"  Mean within-CV std: {cv_summary['mean_cv_std']:.3f}")
         lines.append(f"  Median within-CV std: {cv_summary['median_cv_std']:.3f}")
         lines.append(f"  Min within-CV std: {cv_summary['min_cv_std']:.3f}")
         lines.append(f"  Max within-CV std: {cv_summary['max_cv_std']:.3f}")
-        lines.append(f"  25th-75th percentile: {cv_summary['p25_cv_std']:.3f} - {cv_summary['p75_cv_std']:.3f}")
+        lines.append(
+            f"  25th-75th percentile: {cv_summary['p25_cv_std']:.3f} - {cv_summary['p75_cv_std']:.3f}"
+        )
 
     lines.append("\n--- Overall ---")
     lines.append(f"  N observations: {len(df)}")
@@ -160,7 +174,9 @@ def build_summary_table(df, group_cols, score_col="score"):
         lines.append(f"{'─' * 90}")
         vb = variance_breakdown(df, valid_factors, score_col)
         for factor, vals in vb.items():
-            lines.append(f"  {factor}: variance = {vals['variance_explained']:.3f}, "
-                         f"proportion = {vals['proportion']:.3f}")
+            lines.append(
+                f"  {factor}: variance = {vals['variance_explained']:.3f}, "
+                f"proportion = {vals['proportion']:.3f}"
+            )
 
     return "\n".join(lines)
