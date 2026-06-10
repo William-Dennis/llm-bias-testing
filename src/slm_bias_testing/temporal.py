@@ -10,6 +10,7 @@ Usage:
 
 import argparse
 import json
+import logging
 import os
 import sys
 from datetime import datetime
@@ -21,6 +22,8 @@ import pandas as pd
 from scipy import stats as sp_stats
 
 from slm_bias_testing.registry import MODELS
+
+logger = logging.getLogger(__name__)
 
 # Score field names used by each benchmark
 BENCHMARK_SCORE_FIELDS = {
@@ -93,7 +96,11 @@ def merge_registry(records: list[dict]) -> pd.DataFrame:
         try:
             release = datetime.strptime(release_date, "%Y-%m-%d")
         except ValueError:
-            release = datetime.strptime(release_date, "%Y-%m")
+            try:
+                release = datetime.strptime(release_date, "%Y-%m")
+            except ValueError:
+                logger.warning("Unrecognised date format for %s: %s", name, release_date)
+                continue
         rows.append(
             {
                 "model": name,
@@ -188,7 +195,7 @@ def plot_temporal(df: pd.DataFrame, output_dir: str = "figs") -> str:
     plt.tight_layout()
     path = os.path.join(output_dir, "temporal_trends.png")
     plt.savefig(path, dpi=150, bbox_inches="tight")
-    plt.close()
+    plt.close(_fig)
     return path
 
 
@@ -223,7 +230,7 @@ def plot_family_comparison(df: pd.DataFrame, output_dir: str = "figs") -> str:
     plt.tight_layout()
     path = os.path.join(output_dir, "family_comparison.png")
     plt.savefig(path, dpi=150, bbox_inches="tight")
-    plt.close()
+    plt.close(_fig)
     return path
 
 

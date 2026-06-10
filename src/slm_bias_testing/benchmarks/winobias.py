@@ -36,6 +36,8 @@ class WinoBiasBenchmark(BaseBenchmark):
         if self._occupations is not None:
             return self._occupations
         occ = set()
+        if self._data is None:
+            self.load_dataset()
         assert self._data is not None
         for item in self._data:
             tokens = item["tokens"]
