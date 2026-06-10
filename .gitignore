@@ -3,8 +3,8 @@ keys.py
 # Experiment results
 results/
 
-# Generated figures
-figs/
+# Generated figures (temporal_trends.png is committed for README)
+figs/family_comparison.png
 
 # IDE
 .idea/
