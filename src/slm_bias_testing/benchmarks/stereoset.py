@@ -65,7 +65,9 @@ class StereoSetBenchmark(BaseBenchmark):
 
             # Skip if we can't find both
             if stereotype_text is None or anti_stereotype_text is None:
-                logger.debug("Skipping item %s: missing stereotype or anti-stereotype", item.get("id"))
+                logger.debug(
+                    "Skipping item %s: missing stereotype or anti-stereotype", item.get("id")
+                )
                 continue
 
             stereo_score = self._score_sentence(model, context, stereotype_text)
@@ -74,17 +76,19 @@ class StereoSetBenchmark(BaseBenchmark):
             chosen_stereotype = stereo_score > anti_score
             tie = stereo_score == anti_score
 
-            results.append({
-                "id": item.get("id", ""),
-                "bias_type": bias_type,
-                "target": item.get("target", ""),
-                "stereotype_text": stereotype_text,
-                "anti_stereotype_text": anti_stereotype_text,
-                "stereotype_score": stereo_score,
-                "anti_stereotype_score": anti_score,
-                "chosen_stereotype": chosen_stereotype,
-                "tie": tie,
-            })
+            results.append(
+                {
+                    "id": item.get("id", ""),
+                    "bias_type": bias_type,
+                    "target": item.get("target", ""),
+                    "stereotype_text": stereotype_text,
+                    "anti_stereotype_text": anti_stereotype_text,
+                    "stereotype_score": stereo_score,
+                    "anti_stereotype_score": anti_score,
+                    "chosen_stereotype": chosen_stereotype,
+                    "tie": tie,
+                }
+            )
 
         overall_stereotype_count = sum(1 for r in results if r["chosen_stereotype"])
         total = len(results)

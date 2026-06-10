@@ -1,88 +1,104 @@
+"""Ollama-backed model client with automatic server recovery."""
+
+from __future__ import annotations
+
+import contextlib
 import logging
 import time
+from typing import TYPE_CHECKING
 
 import ollama
 
 from slm_bias_testing.ollama_setup import OllamaServer
-from slm_bias_testing.transformers import Model as TransformerModel
+
+if TYPE_CHECKING:
+    from slm_bias_testing.transformers import Model as TransformerModel
 
 logger = logging.getLogger(__name__)
 
 LLM_MODEL = "gemma3:1b-it-qat"
 PROVIDER = "ollama"
 
-_ollama_client = ollama.Client(timeout=300)
-_ollama_server = None
 
+class OllamaClient:
+    """Thin wrapper around an Ollama client with auto-restart on failure."""
 
-def _ensure_ollama():
-    """Check if Ollama is responding; restart if not."""
-    global _ollama_server
-    try:
-        _ollama_client.list()
-        return
-    except Exception:
-        logger.warning("Ollama not responding, restarting...")
-        if _ollama_server is not None:
-            try:
-                _ollama_server.stop()
-            except Exception:
-                pass
-        _ollama_server = OllamaServer(kill_existing=True)
-        _ollama_server.start()
-        logger.info("Ollama restarted")
+    def __init__(self, timeout: int = 300) -> None:
+        self._client = ollama.Client(timeout=timeout)
+        self._server: OllamaServer | None = None
+
+    def ensure_running(self) -> None:
+        """Check if Ollama is responding; restart if not."""
+        try:
+            self._client.list()
+            return
+        except Exception:
+            logger.warning("Ollama not responding, restarting...")
+            if self._server is not None:
+                with contextlib.suppress(Exception):
+                    self._server.stop()
+            self._server = OllamaServer(kill_existing=True)
+            self._server.start()
+            logger.info("Ollama restarted")
+
+    @property
+    def client(self) -> ollama.Client:
+        return self._client
 
 
 class Model:
-    def __init__(self, model_name: str = LLM_MODEL, provider: str = PROVIDER):
+    """Unified prediction interface for Ollama and Transformers providers."""
+
+    def __init__(
+        self,
+        model_name: str = LLM_MODEL,
+        provider: str = PROVIDER,
+        ollama_client: OllamaClient | None = None,
+    ) -> None:
         self.model_name = model_name
         self.provider = provider
+        self._ollama_client = ollama_client or OllamaClient()
+        self._transformer_model: TransformerModel | None = None
 
         if provider == "ollama":
-            self.setup_ollama()
+            self._ollama_client.ensure_running()
+        elif provider == "transformers":
+            from slm_bias_testing.transformers import Model as TransformerModel
 
-        if provider == "transformers":
-            self.setup_transformers()
+            self._transformer_model = TransformerModel()
 
     def predict(self, input_text: str, temperature: float = 0.0) -> str:
+        """Run a single prediction. Raises on provider mismatch."""
         if self.provider == "ollama":
-            return self.predict_ollama(input_text, temperature)
-        elif self.provider == "transformers":
-            return self.predict_transformers(input_text, temperature)
-        else:
-            raise ValueError(
-                f"Unknown predict setup, model: {self.model_name}, provider: {self.provider}"
-            )
+            return self._predict_ollama(input_text, temperature)
+        if self.provider == "transformers":
+            return self._predict_transformers(input_text, temperature)
+        raise ValueError(f"Unknown provider '{self.provider}' for model '{self.model_name}'")
 
-    def setup_ollama(self):
-        _ensure_ollama()
-
-    def setup_transformers(self):
-        model = TransformerModel()
-        self.model = model
-
-    def predict_transformers(self, input_text: str, temperature: float = 0.0) -> str:
-        return self.model.predict(input_text, temperature)
-
-    def predict_ollama(self, input_text: str, temperature: float = 0.0) -> str:
+    def _predict_ollama(self, input_text: str, temperature: float) -> str:
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                response = _ollama_client.chat(
+                response = self._ollama_client.client.chat(
                     model=self.model_name,
                     messages=[{"role": "user", "content": input_text}],
-                    options={
-                        "temperature": temperature,
-                    },
+                    options={"temperature": temperature},
                 )
                 return response["message"]["content"]
             except Exception as e:
                 logger.warning(
                     "Ollama call failed (attempt %d/%d): %s",
-                    attempt + 1, max_retries, e,
+                    attempt + 1,
+                    max_retries,
+                    e,
                 )
                 if attempt < max_retries - 1:
-                    _ensure_ollama()
+                    self._ollama_client.ensure_running()
                     time.sleep(2)
                 else:
                     raise
+
+    def _predict_transformers(self, input_text: str, temperature: float) -> str:
+        if self._transformer_model is None:
+            raise RuntimeError("Transformers model not initialised")
+        return self._transformer_model.predict(input_text, temperature)

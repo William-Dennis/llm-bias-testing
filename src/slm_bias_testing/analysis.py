@@ -1,4 +1,5 @@
 """Statistical analysis for CV screening benchmark."""
+
 import logging
 
 import numpy as np
@@ -36,7 +37,7 @@ def cohens_d(series1, series2):
     if n1 < 2 or n2 < 2:
         return 0.0
     s1, s2 = series1.std(ddof=1), series2.std(ddof=1)
-    pooled = np.sqrt(((n1 - 1) * s1 ** 2 + (n2 - 1) * s2 ** 2) / (n1 + n2 - 2))
+    pooled = np.sqrt(((n1 - 1) * s1**2 + (n2 - 1) * s2**2) / (n1 + n2 - 2))
     if pooled == 0:
         return 0.0
     return (series1.mean() - series2.mean()) / pooled
@@ -58,18 +59,20 @@ def pairwise_comparisons(df, group_col, score_col="score"):
                 continue
             d = cohens_d(g1, g2)
             t_stat, p_val = sp_stats.ttest_ind(g1, g2, equal_var=False)
-            rows.append({
-                "group_col": group_col,
-                "group1": groups[i],
-                "group2": groups[j],
-                "cohens_d": round(d, 3),
-                "t_statistic": round(t_stat, 3),
-                "p_value": round(p_val, 4),
-                "mean1": round(g1.mean(), 2),
-                "mean2": round(g2.mean(), 2),
-                "n1": len(g1),
-                "n2": len(g2),
-            })
+            rows.append(
+                {
+                    "group_col": group_col,
+                    "group1": groups[i],
+                    "group2": groups[j],
+                    "cohens_d": round(d, 3),
+                    "t_statistic": round(t_stat, 3),
+                    "p_value": round(p_val, 4),
+                    "mean1": round(g1.mean(), 2),
+                    "mean2": round(g2.mean(), 2),
+                    "n1": len(g1),
+                    "n2": len(g2),
+                }
+            )
     return pd.DataFrame(rows)
 
 
@@ -121,14 +124,16 @@ def build_summary_table(df, group_cols, score_col="score"):
     lines.append("STATISTICAL ANALYSIS")
     lines.append("=" * 90)
 
-    cv_std, cv_summary = per_cv_variance(df, key_col="key", score_col=score_col)
+    _cv_std, cv_summary = per_cv_variance(df, key_col="key", score_col=score_col)
     if cv_summary:
         lines.append("\n--- Per-CV Variance (std across runs) ---")
         lines.append(f"  Mean within-CV std: {cv_summary['mean_cv_std']:.3f}")
         lines.append(f"  Median within-CV std: {cv_summary['median_cv_std']:.3f}")
         lines.append(f"  Min within-CV std: {cv_summary['min_cv_std']:.3f}")
         lines.append(f"  Max within-CV std: {cv_summary['max_cv_std']:.3f}")
-        lines.append(f"  25th-75th percentile: {cv_summary['p25_cv_std']:.3f} - {cv_summary['p75_cv_std']:.3f}")
+        lines.append(
+            f"  25th-75th percentile: {cv_summary['p25_cv_std']:.3f} - {cv_summary['p75_cv_std']:.3f}"
+        )
 
     lines.append("\n--- Overall ---")
     lines.append(f"  N observations: {len(df)}")
@@ -160,7 +165,9 @@ def build_summary_table(df, group_cols, score_col="score"):
         lines.append(f"{'─' * 90}")
         vb = variance_breakdown(df, valid_factors, score_col)
         for factor, vals in vb.items():
-            lines.append(f"  {factor}: variance = {vals['variance_explained']:.3f}, "
-                         f"proportion = {vals['proportion']:.3f}")
+            lines.append(
+                f"  {factor}: variance = {vals['variance_explained']:.3f}, "
+                f"proportion = {vals['proportion']:.3f}"
+            )
 
     return "\n".join(lines)

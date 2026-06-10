@@ -1,8 +1,8 @@
+import atexit
 import logging
+import platform
 import subprocess
 import time
-import atexit
-import platform
 import urllib.error
 import urllib.request
 
@@ -66,7 +66,9 @@ class OllamaServer:
         if self.process:
             try:
                 _, stderr_output = self.process.communicate(timeout=5)
-                stderr_output = stderr_output.decode("utf-8", errors="replace") if stderr_output else ""
+                stderr_output = (
+                    stderr_output.decode("utf-8", errors="replace") if stderr_output else ""
+                )
             except Exception:
                 logger.exception("Failed to read ollama server stderr")
                 self.process.kill()

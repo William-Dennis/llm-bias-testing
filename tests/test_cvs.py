@@ -15,7 +15,13 @@ class TestCVs:
     def test_cv_has_demographics(self):
         for cv in cvs:
             meta = cv["metadata"]
-            for key in ("name_gender", "name_ethnicity", "university_prestige", "a_level_quality", "template_name"):
+            for key in (
+                "name_gender",
+                "name_ethnicity",
+                "university_prestige",
+                "a_level_quality",
+                "template_name",
+            ):
                 assert key in meta
 
     def test_cv_has_template_text(self):

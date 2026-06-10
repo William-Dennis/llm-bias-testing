@@ -1,6 +1,6 @@
-from abc import ABC, abstractmethod
 import json
 import os
+from abc import ABC, abstractmethod
 
 
 class BaseBenchmark(ABC):

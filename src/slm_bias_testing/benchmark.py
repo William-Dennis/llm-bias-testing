@@ -1,17 +1,18 @@
 """Core benchmark logic — importable from the package."""
+
+import hashlib
 import logging
 import os
 import re
 import textwrap
-import hashlib
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-from slm_bias_testing.call_api import Model
 from slm_bias_testing.analysis import build_summary_table
+from slm_bias_testing.call_api import Model
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +37,7 @@ def plot_and_save_boxplots(df, variables, output_dir="plots", wrap_width=10):
             for i, cat in enumerate(order):
                 plt.scatter(i, means[cat], color="red", zorder=10, s=50, edgecolor="k")
 
-            wrapped_labels = [
-                "\n".join(textwrap.wrap(str(label), wrap_width)) for label in order
-            ]
+            wrapped_labels = ["\n".join(textwrap.wrap(str(label), wrap_width)) for label in order]
             plt.xticks(ticks=range(len(order)), labels=wrapped_labels, rotation=0)
 
             plt.title(f"Score Distribution by {var.capitalize()}")
@@ -56,7 +55,9 @@ def load_existing_records(filepath="records.csv"):
             df = pd.read_csv(filepath, index_col=0)
             required = {"run", "score"}
             if not required.issubset(df.columns):
-                logger.warning("records.csv missing columns %s — starting fresh", required - set(df.columns))
+                logger.warning(
+                    "records.csv missing columns %s — starting fresh", required - set(df.columns)
+                )
                 return pd.DataFrame()
             return df
         except Exception:
@@ -92,7 +93,15 @@ def process_cv_run(model, cv, run, base_prompt, seen_set, temperature=1):
     return record
 
 
-def run_benchmark(model_name, output_dir="results", timeout=1800, cv_data=None, job_desc=None, max_samples=None, n_runs=10):
+def run_benchmark(
+    model_name,
+    output_dir="results",
+    timeout=1800,
+    cv_data=None,
+    job_desc=None,
+    max_samples=None,
+    n_runs=10,
+):
     """Run CV screening benchmark for a single model.
 
     Args:
@@ -119,7 +128,7 @@ def run_benchmark(model_name, output_dir="results", timeout=1800, cv_data=None, 
 
     seen_set = set()
     if not existing_df.empty:
-        seen_set = set(zip(existing_df["key"], existing_df["run"]))
+        seen_set = set(zip(existing_df["key"], existing_df["run"], strict=True))
 
     logger.info("Starting Model: %s", model_name)
     model = Model(model_name=model_name)
@@ -140,9 +149,7 @@ def run_benchmark(model_name, output_dir="results", timeout=1800, cv_data=None, 
     records = []
     for cv in tqdm(cv_data):
         for run in range(n_runs):
-            record = process_cv_run(
-                model, cv, run, base_prompt, seen_set, temperature
-            )
+            record = process_cv_run(model, cv, run, base_prompt, seen_set, temperature)
             if record:
                 records.append(record)
 
@@ -152,7 +159,13 @@ def run_benchmark(model_name, output_dir="results", timeout=1800, cv_data=None, 
         save_records(existing_df, records_filepath)
 
         variables = ["name", "university", "a_levels"]
-        demographic_vars = ["template_name", "name_gender", "name_ethnicity", "university_prestige", "a_level_quality"]
+        demographic_vars = [
+            "template_name",
+            "name_gender",
+            "name_ethnicity",
+            "university_prestige",
+            "a_level_quality",
+        ]
         all_plot_vars = list(dict.fromkeys(variables + demographic_vars))
         plot_and_save_boxplots(existing_df, all_plot_vars, output_dir=plots_dir)
 
@@ -162,4 +175,8 @@ def run_benchmark(model_name, output_dir="results", timeout=1800, cv_data=None, 
         with open(os.path.join(output_dir, "analysis_summary.txt"), "w") as f:
             f.write(summary)
 
-    return existing_df if not existing_df.empty else (pd.DataFrame(records) if records else pd.DataFrame())
+    return (
+        existing_df
+        if not existing_df.empty
+        else (pd.DataFrame(records) if records else pd.DataFrame())
+    )

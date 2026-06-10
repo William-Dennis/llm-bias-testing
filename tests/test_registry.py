@@ -46,7 +46,9 @@ class TestRegistryCompleteness:
     def test_all_models_have_required_fields(self):
         required = {"ollama_tag", "params", "release_date", "family", "architecture"}
         for name, config in MODELS.items():
-            assert required.issubset(config.keys()), f"Model {name} missing fields: {required - set(config.keys())}"
+            assert required.issubset(config.keys()), (
+                f"Model {name} missing fields: {required - set(config.keys())}"
+            )
 
     def test_all_params_are_positive(self):
         for name, config in MODELS.items():
@@ -54,4 +56,6 @@ class TestRegistryCompleteness:
 
     def test_all_models_decoder_only(self):
         for name, config in MODELS.items():
-            assert config["architecture"] in VALID_ARCHS, f"Model {name} has unexpected architecture: {config['architecture']}"
+            assert config["architecture"] in VALID_ARCHS, (
+                f"Model {name} has unexpected architecture: {config['architecture']}"
+            )
