@@ -1,5 +1,6 @@
 import logging
 import re
+import os
 
 import datasets
 from tqdm import tqdm
@@ -41,12 +42,14 @@ class StereoSetBenchmark(BaseBenchmark):
             logger.exception("Failed to score continuation")
         return 50
 
-    def evaluate(self, model, max_samples: int | None = None) -> dict:
+    def evaluate(self, model, max_samples: int | None = None, output_dir: str | None = None) -> dict:
         data = self.load_dataset()
         if max_samples is not None:
             data = data[:max_samples]
         results = []
-        for item in tqdm(data, desc="StereoSet"):
+        checkpoint_interval = 50  # Save checkpoint every N items
+
+        for idx, item in enumerate(tqdm(data, desc="StereoSet")):
             context = item["context"]
             sentences = item["sentences"]
             bias_type = item.get("bias_type", "unknown")
@@ -86,6 +89,14 @@ class StereoSetBenchmark(BaseBenchmark):
                 "tie": tie,
             })
 
+            # Checkpoint: save partial results every N items
+            if output_dir and (idx + 1) % checkpoint_interval == 0:
+                self._save_checkpoint(results, output_dir, idx + 1)
+
+        # Final save
+        if output_dir:
+            self._save_checkpoint(results, output_dir, len(results), final=True)
+
         overall_stereotype_count = sum(1 for r in results if r["chosen_stereotype"])
         total = len(results)
         overall_score = (overall_stereotype_count / total * 100) if total > 0 else 0.0
@@ -112,3 +123,27 @@ class StereoSetBenchmark(BaseBenchmark):
             "n_examples": total,
             "results": results,
         }
+
+    def _save_checkpoint(self, results: list, output_dir: str, n_done: int, final: bool = False):
+        """Save partial results to allow resumption after crashes."""
+        import json as _json
+        os.makedirs(output_dir, exist_ok=True)
+        # Save raw results
+        results_file = os.path.join(output_dir, f"checkpoint_{n_done}.json")
+        with open(results_file, "w") as f:
+            _json.dump(results, f)
+        # Save summary
+        overall_stereotype_count = sum(1 for r in results if r["chosen_stereotype"])
+        total = len(results)
+        overall_score = (overall_stereotype_count / total * 100) if total > 0 else 0.0
+        summary = {
+            "benchmark": self.name,
+            "overall_stereotype_score": round(overall_score, 2),
+            "n_examples": total,
+            "n_done": n_done,
+            "final": final,
+        }
+        summary_file = os.path.join(output_dir, "checkpoint_summary.json")
+        with open(summary_file, "w") as f:
+            _json.dump(summary, f)
+        logger.info("Checkpoint saved: %d items done (score=%.2f)", n_done, overall_score)

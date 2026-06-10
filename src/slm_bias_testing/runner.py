@@ -3,12 +3,38 @@ import json
 import logging
 import os
 import subprocess
+import time
 
 from slm_bias_testing.registry import MODELS, get_model
 
 logger = logging.getLogger(__name__)
 
 BENCHMARK_CHOICES = ["cv-screening", "stereoset", "demographic-bias", "winobias", "all"]
+
+
+def restart_ollama_clean():
+    """Kill all Ollama processes and start a fresh server. Ensures no stale state between models."""
+    logger.info("Killing all Ollama processes for clean restart...")
+    # Kill all ollama processes
+    subprocess.run(["pkill", "-9", "-f", "ollama"], capture_output=True, timeout=10)
+    time.sleep(3)
+    # Start fresh server
+    subprocess.Popen(
+        ["ollama", "serve"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    # Wait for server to be ready
+    for attempt in range(30):
+        try:
+            subprocess.run(
+                ["ollama", "list"], capture_output=True, check=True, timeout=5
+            )
+            logger.info("Ollama server ready after clean restart")
+            return
+        except Exception:
+            time.sleep(2)
+    raise RuntimeError("Ollama server failed to start after clean restart")
 
 
 def get_benchmarks(benchmark: str) -> list[str]:
@@ -87,6 +113,7 @@ def run_benchmark_for_model(
             if bench == "stereoset":
                 from slm_bias_testing.benchmarks.stereoset import StereoSetBenchmark
                 bm = StereoSetBenchmark()
+                results = bm.evaluate(model, max_samples=max_samples, output_dir=results_dir)
             elif bench == "crows-pairs":
                 from slm_bias_testing.benchmarks.crows_pairs import CrowsPairsBenchmark
                 bm = CrowsPairsBenchmark()
