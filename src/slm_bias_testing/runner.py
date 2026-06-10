@@ -88,9 +88,10 @@ def run_benchmark_for_model(
                 "std_score": float(df["score"].std()) if df is not None and not df.empty else None,
             }
         else:
+            from slm_bias_testing.call_api import DEFAULT_NUM_CTX
             from slm_bias_testing.call_api import Model as ApiModel
 
-            model = ApiModel(model_name=ollama_tag)
+            model = ApiModel(model_name=ollama_tag, num_ctx=DEFAULT_NUM_CTX)
 
             if bench == "stereoset":
                 from slm_bias_testing.benchmarks.stereoset import StereoSetBenchmark

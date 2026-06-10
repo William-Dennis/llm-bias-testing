@@ -30,10 +30,8 @@ def run_one(model, benchmark):
         log.info("SKIP %s/%s (exists)", model, benchmark)
         return True
     log.info("RUN %s/%s at %s", model, benchmark, datetime.now())
-    from slm_bias_testing.runner import run_benchmark_for_model, restart_ollama_clean
+    from slm_bias_testing.runner import run_benchmark_for_model
     try:
-        # Clean restart Ollama before each model to ensure fresh state
-        restart_ollama_clean()
         run_benchmark_for_model(model, benchmark, RESULTS, 7200)  # 2h timeout
         ok = os.path.exists(outfile)
         if ok:
@@ -47,6 +45,16 @@ def run_one(model, benchmark):
 
 def main():
     which = sys.argv[1] if len(sys.argv) > 1 else "all"
+    
+    # Parse --num-ctx from argv if present
+    num_ctx = None
+    for i, arg in enumerate(sys.argv):
+        if arg == "--num-ctx" and i + 1 < len(sys.argv):
+            num_ctx = int(sys.argv[i + 1])
+            os.environ["SLM_NUM_CTX"] = str(num_ctx)
+
+    if num_ctx is not None:
+        log.info("Using num_ctx=%d (Ollama 0.19+ MLX cache optimisation)", num_ctx)
     
     if which == "all":
         benchmarks = ALL_BENCHMARKS
