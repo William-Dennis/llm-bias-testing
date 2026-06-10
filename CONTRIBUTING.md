@@ -10,35 +10,47 @@ uv sync --extra dev
 
 ## Workflow
 
-This repo follows a **feature-branch → PR → merge** model. Never commit directly to `main`.
+This repo enforces an **issue → branch → PR → review → merge** model.
+**Never commit directly to `main`.** No exceptions.
 
-1. Create a branch from `main`:
+1. Create an issue describing the change.
+2. Create a branch from `main`:
    ```bash
    git checkout main && git pull
-   git checkout -b feat/your-feature
+   git checkout -b feat/issue-N-description
    ```
-
-2. Make changes, write tests first (TDD), then implement.
-
-3. Run checks locally before pushing:
+3. Make changes. Write tests first (TDD), then implement.
+4. Run checks locally before pushing:
    ```bash
    uv run ruff check src tests
    uv run ruff format --check src tests
    uv run mypy src/slm_bias_testing
    uv run pytest
    ```
+5. Push and open a PR targeting `main`. Link the issue with `Closes #N`.
+6. All CI checks must pass (Lint, Type Check, Test 3.11, Test 3.12).
+7. At least 1 approving review required before merge.
+8. All review threads must be resolved before merge.
+9. Squash merge. Branch auto-deleted after merge.
 
-4. Push and open a PR targeting `main`.
+## Branch Protection (main)
 
-5. All CI checks must pass before merge. Address review feedback promptly.
+- **Strict status checks:** Lint, Type Check, Test (Python 3.11), Test (Python 3.12)
+- **Required approving reviews:** 1
+- **Dismiss stale reviews:** yes (new pushes invalidate old approvals)
+- **Conversation resolution:** all threads must be resolved
+- **Linear history:** squash merges only (no merge commits)
+- **Enforce admins:** yes (no bypassing protection)
+- **No force push, no branch deletion**
 
 ## Code Quality Standards
 
-- **Linting:** Ruff (pycodestyle, pyflakes, isort, bugbear, simplify)
-- **Formatting:** Ruff formatter
-- **Type checking:** Mypy with `disallow_untyped_defs`
-- **Testing:** Pytest with coverage for all new code
+- **Linting:** Ruff (E, W, F, I, UP, B, SIM, TCH, RUF)
+- **Formatting:** Ruff formatter (line length 100)
+- **Type checking:** Mypy with `disallow_untyped_defs`, `warn_return_any`
+- **Testing:** Pytest. All new code must have tests.
 - **SOLID:** Single responsibility per module/class. No mutable global state.
+- **No mutable globals.** Use dependency injection (classes, not module-level state).
 
 ## Commit Convention
 
@@ -49,6 +61,11 @@ Optional body.
 ```
 
 Types: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`
+
+## Merge Strategy
+
+**Squash merge** for all feature branches. One PR per issue.
+Branches auto-delete after merge.
 
 ## Running Benchmarks
 
