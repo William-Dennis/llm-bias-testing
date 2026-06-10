@@ -48,6 +48,16 @@ def run_one(model, benchmark):
 def main():
     which = sys.argv[1] if len(sys.argv) > 1 else "all"
     
+    # Parse --num-ctx from argv if present
+    num_ctx = None
+    for i, arg in enumerate(sys.argv):
+        if arg == "--num-ctx" and i + 1 < len(sys.argv):
+            num_ctx = int(sys.argv[i + 1])
+            os.environ["SLM_NUM_CTX"] = str(num_ctx)
+
+    if num_ctx is not None:
+        log.info("Using num_ctx=%d (Ollama 0.19+ MLX cache optimisation)", num_ctx)
+    
     if which == "all":
         benchmarks = ALL_BENCHMARKS
     elif which == "phase1":
