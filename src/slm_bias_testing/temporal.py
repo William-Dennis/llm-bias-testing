@@ -13,6 +13,7 @@ import json
 import os
 import sys
 from datetime import datetime
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -87,15 +88,12 @@ def merge_registry(records: list[dict]) -> pd.DataFrame:
         name = r["model"]
         if name not in MODELS:
             continue
-        cfg = MODELS[name]
+        cfg: dict[str, Any] = MODELS[name]
+        release_date: str = str(cfg["release_date"])
         try:
-            release = datetime.strptime(cfg["release_date"], "%Y-%m")
+            release = datetime.strptime(release_date, "%Y-%m-%d")
         except ValueError:
-            release = (
-                datetime.strptime(cfg["release_date"], "%Y-%m")
-                if "-" in cfg["release_date"]
-                else datetime.strptime(cfg["release_date"], "%Y-%m-%d")
-            )
+            release = datetime.strptime(release_date, "%Y-%m")
         rows.append(
             {
                 "model": name,
@@ -105,7 +103,7 @@ def merge_registry(records: list[dict]) -> pd.DataFrame:
                 "params": cfg["params"],
                 "family": cfg["family"],
                 "architecture": cfg.get("architecture", "unknown"),
-                "release_date": cfg["release_date"],
+                "release_date": release_date,
                 "release_dt": release,
                 "release_ordinal": release.toordinal(),
             }
@@ -137,7 +135,7 @@ def plot_temporal(df: pd.DataFrame, output_dir: str = "figs") -> str:
 
         # Color by family
         families = bdf["family"].unique()
-        colors = plt.cm.tab10(np.linspace(0, 1, len(families)))
+        colors = plt.colormaps["tab10"](np.linspace(0, 1, len(families)))
         family_color = {f: c for f, c in zip(families, colors, strict=True)}
 
         for family in families:
@@ -229,7 +227,7 @@ def plot_family_comparison(df: pd.DataFrame, output_dir: str = "figs") -> str:
     return path
 
 
-def print_summary(df: pd.DataFrame):
+def print_summary(df: pd.DataFrame) -> None:
     """Print a human-readable summary table."""
     print()
     print("=" * 80)
@@ -256,7 +254,7 @@ def print_summary(df: pd.DataFrame):
         print()
 
 
-def main():
+def main() -> pd.DataFrame:
     parser = argparse.ArgumentParser(description="Temporal bias analysis")
     parser.add_argument("--results-dir", default="results", help="Results directory to scan")
     parser.add_argument("--output-dir", default="figs", help="Output directory for figures")

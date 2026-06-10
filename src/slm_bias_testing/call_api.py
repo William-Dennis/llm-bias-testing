@@ -65,7 +65,7 @@ class Model:
         elif provider == "transformers":
             from slm_bias_testing.transformers import Model as TransformerModel
 
-            self._transformer_model = TransformerModel()
+            self._transformer_model = TransformerModel(model_name=self.model_name)
 
     def predict(self, input_text: str, temperature: float = 0.0) -> str:
         """Run a single prediction. Raises on provider mismatch."""
@@ -84,7 +84,7 @@ class Model:
                     messages=[{"role": "user", "content": input_text}],
                     options={"temperature": temperature},
                 )
-                return response["message"]["content"]
+                return response["message"]["content"]  # type: ignore[no-any-return]
             except Exception as e:
                 logger.warning(
                     "Ollama call failed (attempt %d/%d): %s",
@@ -97,6 +97,7 @@ class Model:
                     time.sleep(2)
                 else:
                     raise
+        raise RuntimeError("Unreachable")
 
     def _predict_transformers(self, input_text: str, temperature: float) -> str:
         if self._transformer_model is None:

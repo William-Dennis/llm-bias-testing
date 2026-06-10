@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import atexit
 import logging
 import platform
@@ -11,11 +13,11 @@ logger = logging.getLogger(__name__)
 
 class OllamaServer:
     def __init__(self, kill_existing: bool = True):
-        self.process = None
+        self.process: subprocess.Popen[bytes] | None = None
         if kill_existing:
             self._kill_existing_ollama()
 
-    def _kill_existing_ollama(self):
+    def _kill_existing_ollama(self) -> None:
         # Windows
         if platform.system() == "Windows":
             try:
@@ -39,7 +41,7 @@ class OllamaServer:
             except Exception:
                 logger.exception("Failed to kill existing ollama process")
 
-    def start(self):
+    def start(self) -> None:
         if self.process is not None:
             return  # already running
 
@@ -51,7 +53,7 @@ class OllamaServer:
         self._wait_for_server()
         atexit.register(self.stop)
 
-    def _wait_for_server(self, timeout: int = 30, interval: int = 1):
+    def _wait_for_server(self, timeout: int = 30, interval: int = 1) -> None:
         url = "http://localhost:11434/api/tags"
         start_time = time.time()
         while time.time() - start_time < timeout:
@@ -65,9 +67,9 @@ class OllamaServer:
         stderr_output = ""
         if self.process:
             try:
-                _, stderr_output = self.process.communicate(timeout=5)
+                _stdout, stderr_bytes = self.process.communicate(timeout=5)
                 stderr_output = (
-                    stderr_output.decode("utf-8", errors="replace") if stderr_output else ""
+                    stderr_bytes.decode("utf-8", errors="replace") if stderr_bytes else ""
                 )
             except Exception:
                 logger.exception("Failed to read ollama server stderr")
@@ -77,7 +79,7 @@ class OllamaServer:
             logger.error("Ollama server stderr:\n%s", stderr_output)
         raise RuntimeError(f"Ollama server did not start within {timeout} seconds")
 
-    def stop(self):
+    def stop(self) -> None:
         if self.process:
             self.process.terminate()
             self.process.wait()

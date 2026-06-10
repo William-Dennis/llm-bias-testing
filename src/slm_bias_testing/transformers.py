@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 import torch
@@ -20,7 +22,7 @@ class Model:
 
         self.token = token
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, token=token)
-        self.model = AutoModelForCausalLM.from_pretrained(model_name, token=token).to(self.device)
+        self.model = AutoModelForCausalLM.from_pretrained(model_name, token=token).to(self.device)  # type: ignore[arg-type]
 
         self.model.eval()
         if self.device.type == "cuda":
@@ -36,4 +38,4 @@ class Model:
                 do_sample=temperature > 0.0,
                 temperature=temperature,
             )
-        return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        return self.tokenizer.decode(outputs[0], skip_special_tokens=True)  # type: ignore[no-any-return]

@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from slm_bias_testing.call_api import LLM_MODEL, PROVIDER, Model, OllamaClient
 

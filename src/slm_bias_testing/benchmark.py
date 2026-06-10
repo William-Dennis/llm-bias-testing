@@ -1,10 +1,13 @@
 """Core benchmark logic — importable from the package."""
 
+from __future__ import annotations
+
 import hashlib
 import logging
 import os
 import re
 import textwrap
+from typing import Any
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -19,11 +22,13 @@ logger = logging.getLogger(__name__)
 SCORE_PATTERN = re.compile(r"(\d{1,3})/100")
 
 
-def sha256_hash(text):
+def sha256_hash(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def plot_and_save_boxplots(df, variables, output_dir="plots", wrap_width=10):
+def plot_and_save_boxplots(
+    df: pd.DataFrame, variables: list[str], output_dir: str = "plots", wrap_width: int = 10
+) -> None:
     os.makedirs(output_dir, exist_ok=True)
 
     for var in variables:
@@ -49,7 +54,7 @@ def plot_and_save_boxplots(df, variables, output_dir="plots", wrap_width=10):
             plt.close()
 
 
-def load_existing_records(filepath="records.csv"):
+def load_existing_records(filepath: str = "records.csv") -> pd.DataFrame:
     if os.path.exists(filepath):
         try:
             df = pd.read_csv(filepath, index_col=0)
@@ -65,11 +70,18 @@ def load_existing_records(filepath="records.csv"):
     return pd.DataFrame()
 
 
-def save_records(df, filepath="records.csv"):
+def save_records(df: pd.DataFrame, filepath: str = "records.csv") -> None:
     df.to_csv(filepath)
 
 
-def process_cv_run(model, cv, run, base_prompt, seen_set, temperature=1):
+def process_cv_run(
+    model: Model,
+    cv: dict[str, Any],
+    run: int,
+    base_prompt: str,
+    seen_set: set[tuple[str, int]],
+    temperature: float = 1,
+) -> dict[str, Any] | None:
     metadata = cv["metadata"]
     prompt = base_prompt + f"\nCandidate CV\n{cv['cv']}"
     key = sha256_hash(prompt)
@@ -94,14 +106,14 @@ def process_cv_run(model, cv, run, base_prompt, seen_set, temperature=1):
 
 
 def run_benchmark(
-    model_name,
-    output_dir="results",
-    timeout=1800,
-    cv_data=None,
-    job_desc=None,
-    max_samples=None,
-    n_runs=10,
-):
+    model_name: str,
+    output_dir: str = "results",
+    timeout: int = 1800,
+    cv_data: list[dict[str, Any]] | None = None,
+    job_desc: str | None = None,
+    max_samples: int | None = None,
+    n_runs: int = 10,
+) -> pd.DataFrame:
     """Run CV screening benchmark for a single model.
 
     Args:
@@ -118,6 +130,7 @@ def run_benchmark(
     if job_desc is None:
         from examples.job_description import job_description as job_desc
 
+    assert cv_data is not None
     if max_samples is not None:
         cv_data = cv_data[:max_samples]
 

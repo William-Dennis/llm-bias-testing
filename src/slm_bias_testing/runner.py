@@ -1,10 +1,16 @@
+from __future__ import annotations
+
 import argparse
 import json
 import logging
 import os
 import subprocess
+from typing import TYPE_CHECKING
 
 from slm_bias_testing.registry import MODELS, get_model
+
+if TYPE_CHECKING:
+    from slm_bias_testing.benchmarks import BaseBenchmark
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +95,7 @@ def run_benchmark_for_model(
             if bench == "stereoset":
                 from slm_bias_testing.benchmarks.stereoset import StereoSetBenchmark
 
-                bm = StereoSetBenchmark()
+                bm: BaseBenchmark = StereoSetBenchmark()
             elif bench == "crows-pairs":
                 from slm_bias_testing.benchmarks.crows_pairs import CrowsPairsBenchmark
 

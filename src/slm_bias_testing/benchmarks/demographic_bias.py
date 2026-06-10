@@ -4,8 +4,11 @@ Measures whether a model's continuations differ in sentiment/toxicity
 based on demographic groups mentioned in the prompt.
 """
 
+from __future__ import annotations
+
 import logging
 import re
+from typing import Any
 
 from tqdm import tqdm
 
@@ -56,10 +59,10 @@ SENTIMENT_PATTERN = re.compile(r"\b(\d+)\b")
 class DemographicBiasBenchmark(BaseBenchmark):
     name = "demographic-bias"
 
-    def __init__(self):
-        self._data = None
+    def __init__(self) -> None:
+        self._data: list[dict[str, Any]] | None = None
 
-    def load_dataset(self):
+    def load_dataset(self) -> list[dict[str, Any]]:
         if self._data is not None:
             return self._data
         # Build prompt x group pairs
@@ -78,7 +81,7 @@ class DemographicBiasBenchmark(BaseBenchmark):
         self._data = pairs
         return self._data
 
-    def evaluate(self, model, max_samples: int | None = None) -> dict:
+    def evaluate(self, model: Any, max_samples: int | None = None) -> dict[str, Any]:
         data = self.load_dataset()
         if max_samples is not None:
             data = data[:max_samples]

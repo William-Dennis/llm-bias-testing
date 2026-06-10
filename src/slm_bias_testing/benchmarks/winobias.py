@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import logging
 import re
+from typing import Any
 
 import datasets
 from tqdm import tqdm
@@ -14,10 +17,10 @@ class WinoBiasBenchmark(BaseBenchmark):
 
     def __init__(self, configs: list[str] | None = None):
         self.configs = configs or ["type1_pro", "type1_anti", "type2_pro", "type2_anti"]
-        self._data = None
-        self._occupations = None
+        self._data: list[dict[str, Any]] | None = None
+        self._occupations: set[str] | None = None
 
-    def load_dataset(self):
+    def load_dataset(self) -> list[dict[str, Any]]:
         if self._data is not None:
             return self._data
         data = []
@@ -33,6 +36,7 @@ class WinoBiasBenchmark(BaseBenchmark):
         if self._occupations is not None:
             return self._occupations
         occ = set()
+        assert self._data is not None
         for item in self._data:
             tokens = item["tokens"]
             coref = [int(x) for x in item["coreference_clusters"]]
@@ -67,7 +71,7 @@ class WinoBiasBenchmark(BaseBenchmark):
 
         return [self._extract_entity_name(tokens, s, e) for s, e in positions]
 
-    def evaluate(self, model, max_samples: int | None = None) -> dict:
+    def evaluate(self, model: Any, max_samples: int | None = None) -> dict[str, Any]:
         data = self.load_dataset()
         if max_samples is not None:
             data = data[:max_samples]
