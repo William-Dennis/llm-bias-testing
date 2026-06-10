@@ -10,7 +10,7 @@ demographic bias (CV screening, StereoSet, WinoBias, demographic completion).
 1. **Never commit directly to `main`.** Branch → PR → review → merge.
 2. **One PR per issue.** Link with `Closes #N`.
 3. **All CI must pass** before merge: Lint, Type Check, Test (3.11 + 3.12).
-4. **1 approving review required.** No self-merges.
+4. **No approving review required** (solo repo). All threads must be resolved.
 5. **All review threads resolved** before merge.
 6. **Squash merge only.** Linear history enforced.
 7. **No force push** to any shared branch.

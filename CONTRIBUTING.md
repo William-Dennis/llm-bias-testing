@@ -36,7 +36,7 @@ This repo enforces an **issue → branch → PR → review → merge** model.
 ## Branch Protection (main)
 
 - **Strict status checks:** Lint, Type Check, Test (Python 3.11), Test (Python 3.12)
-- **Required approving reviews:** 1
+- **Required approving reviews:** 0 (solo repo)
 - **Dismiss stale reviews:** yes (new pushes invalidate old approvals)
 - **Conversation resolution:** all threads must be resolved
 - **Linear history:** squash merges only (no merge commits)
