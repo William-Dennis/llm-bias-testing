@@ -2,9 +2,9 @@ import tempfile
 from unittest.mock import patch
 
 from slm_bias_testing.benchmarks import BaseBenchmark
+from slm_bias_testing.benchmarks.demographic_bias import DemographicBiasBenchmark
 from slm_bias_testing.benchmarks.stereoset import StereoSetBenchmark
 from slm_bias_testing.benchmarks.winobias import WinoBiasBenchmark
-from slm_bias_testing.benchmarks.demographic_bias import DemographicBiasBenchmark
 
 
 class TestBaseBenchmark:
@@ -81,8 +81,12 @@ class TestStereoSetBenchmark:
     def test_load_dataset(self):
         fake_data = [
             self._make_stereoset_item(
-                "test1", "gender", "doctor", "The doctor entered.",
-                "He is skilled.", "She is skilled."
+                "test1",
+                "gender",
+                "doctor",
+                "The doctor entered.",
+                "He is skilled.",
+                "She is skilled.",
             )
         ]
 
@@ -97,8 +101,12 @@ class TestStereoSetBenchmark:
     def test_evaluate_chosen_stereotype(self):
         fake_data = [
             self._make_stereoset_item(
-                "test1", "gender", "doctor", "The doctor entered.",
-                "He is skilled.", "She is skilled."
+                "test1",
+                "gender",
+                "doctor",
+                "The doctor entered.",
+                "He is skilled.",
+                "She is skilled.",
             )
         ]
 
@@ -113,8 +121,12 @@ class TestStereoSetBenchmark:
     def test_evaluate_chosen_anti_stereotype(self):
         fake_data = [
             self._make_stereoset_item(
-                "test1", "gender", "doctor", "The doctor entered.",
-                "He is skilled.", "She is skilled."
+                "test1",
+                "gender",
+                "doctor",
+                "The doctor entered.",
+                "He is skilled.",
+                "She is skilled.",
             )
         ]
 
@@ -127,16 +139,26 @@ class TestStereoSetBenchmark:
     def test_per_category(self):
         fake_data = [
             self._make_stereoset_item(
-                "test1", "gender", "doctor", "The doctor entered.",
-                "He is skilled.", "She is skilled."
+                "test1",
+                "gender",
+                "doctor",
+                "The doctor entered.",
+                "He is skilled.",
+                "She is skilled.",
             ),
             self._make_stereoset_item(
-                "test2", "race", "person", "The person walked in.",
-                "He is loud.", "She is quiet."
+                "test2", "race", "person", "The person walked in.", "He is loud.", "She is quiet."
             ),
         ]
 
-        model = MockModel({"He is skilled.": "90", "She is skilled.": "10", "He is loud.": "80", "She is quiet.": "20"})
+        model = MockModel(
+            {
+                "He is skilled.": "90",
+                "She is skilled.": "10",
+                "He is loud.": "80",
+                "She is quiet.": "20",
+            }
+        )
         with patch.object(StereoSetBenchmark, "load_dataset", return_value=fake_data):
             bm = StereoSetBenchmark()
             results = bm.evaluate(model)
@@ -147,16 +169,23 @@ class TestStereoSetBenchmark:
         """Test that max_samples truncates the dataset."""
         fake_data = [
             self._make_stereoset_item(
-                "test1", "gender", "doctor", "The doctor entered.",
-                "He is skilled.", "She is skilled."
+                "test1",
+                "gender",
+                "doctor",
+                "The doctor entered.",
+                "He is skilled.",
+                "She is skilled.",
             ),
             self._make_stereoset_item(
-                "test2", "race", "person", "The person walked in.",
-                "He is loud.", "She is quiet."
+                "test2", "race", "person", "The person walked in.", "He is loud.", "She is quiet."
             ),
             self._make_stereoset_item(
-                "test3", "age", "worker", "The worker arrived.",
-                "He is experienced.", "She is experienced."
+                "test3",
+                "age",
+                "worker",
+                "The worker arrived.",
+                "He is experienced.",
+                "She is experienced.",
             ),
         ]
 
@@ -180,8 +209,12 @@ class TestStereoSetBenchmark:
                 },
             },
             self._make_stereoset_item(
-                "good1", "gender", "doctor", "The doctor entered.",
-                "He is skilled.", "She is skilled."
+                "good1",
+                "gender",
+                "doctor",
+                "The doctor entered.",
+                "He is skilled.",
+                "She is skilled.",
             ),
         ]
 
@@ -211,7 +244,7 @@ class TestWinoBiasBenchmark:
     def test_entity_extraction(self):
         bm = WinoBiasBenchmark()
         data = bm.load_dataset()
-        item = [d for d in data if d["config"] == "type1_pro"][0]
+        item = next(d for d in data if d["config"] == "type1_pro")
         tokens = item["tokens"]
         coref = [int(x) for x in item["coreference_clusters"]]
         entities = bm._find_entities(tokens, coref[2])
@@ -239,7 +272,7 @@ class TestDemographicBiasBenchmark:
     def test_load_dataset(self):
         bm = DemographicBiasBenchmark()
         data = bm.load_dataset()
-        # 8 groups × ~10 terms × 10 templates = 800, but some groups have fewer terms
+        # 8 groups x ~10 terms x 10 templates = 800, but some groups have fewer terms
         assert len(data) > 0
         assert "prompt" in data[0]
         assert "group" in data[0]
@@ -256,10 +289,22 @@ class TestDemographicBiasBenchmark:
 
     def test_evaluate(self):
         model = MockModel({"The man walked": "Hello"})
-        with patch.object(DemographicBiasBenchmark, "load_dataset", return_value=[
-            {"prompt": "The man walked into the room and", "group": "gender_male", "term": "man"},
-            {"prompt": "The woman walked into the room and", "group": "gender_female", "term": "woman"},
-        ]):
+        with patch.object(
+            DemographicBiasBenchmark,
+            "load_dataset",
+            return_value=[
+                {
+                    "prompt": "The man walked into the room and",
+                    "group": "gender_male",
+                    "term": "man",
+                },
+                {
+                    "prompt": "The woman walked into the room and",
+                    "group": "gender_female",
+                    "term": "woman",
+                },
+            ],
+        ):
             bm = DemographicBiasBenchmark()
             results = bm.evaluate(model)
             assert results["benchmark"] == "demographic-bias"

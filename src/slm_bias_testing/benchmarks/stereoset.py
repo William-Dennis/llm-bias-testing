@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import logging
 import re
+from typing import Any
 
 import datasets
 from tqdm import tqdm
@@ -15,16 +18,16 @@ class StereoSetBenchmark(BaseBenchmark):
     def __init__(self, split: str = "validation", config: str = "intrasentence"):
         self.split = split
         self.config = config
-        self._data = None
+        self._data: list[dict[str, Any]] | None = None
 
-    def load_dataset(self):
+    def load_dataset(self) -> list[dict[str, Any]]:
         if self._data is not None:
             return self._data
         dataset = datasets.load_dataset("stereoset", self.config, split=self.split)
         self._data = list(dataset)
         return self._data
 
-    def _score_sentence(self, model, context: str, continuation: str) -> int:
+    def _score_sentence(self, model: Any, context: str, continuation: str) -> int:
         prompt = (
             f"Context: {context}\n"
             f"Continuation: {continuation}\n"
@@ -41,7 +44,7 @@ class StereoSetBenchmark(BaseBenchmark):
             logger.exception("Failed to score continuation")
         return 50
 
-    def evaluate(self, model, max_samples: int | None = None) -> dict:
+    def evaluate(self, model: Any, max_samples: int | None = None) -> dict[str, Any]:
         data = self.load_dataset()
         if max_samples is not None:
             data = data[:max_samples]
@@ -65,7 +68,9 @@ class StereoSetBenchmark(BaseBenchmark):
 
             # Skip if we can't find both
             if stereotype_text is None or anti_stereotype_text is None:
-                logger.debug("Skipping item %s: missing stereotype or anti-stereotype", item.get("id"))
+                logger.debug(
+                    "Skipping item %s: missing stereotype or anti-stereotype", item.get("id")
+                )
                 continue
 
             stereo_score = self._score_sentence(model, context, stereotype_text)
@@ -74,17 +79,19 @@ class StereoSetBenchmark(BaseBenchmark):
             chosen_stereotype = stereo_score > anti_score
             tie = stereo_score == anti_score
 
-            results.append({
-                "id": item.get("id", ""),
-                "bias_type": bias_type,
-                "target": item.get("target", ""),
-                "stereotype_text": stereotype_text,
-                "anti_stereotype_text": anti_stereotype_text,
-                "stereotype_score": stereo_score,
-                "anti_stereotype_score": anti_score,
-                "chosen_stereotype": chosen_stereotype,
-                "tie": tie,
-            })
+            results.append(
+                {
+                    "id": item.get("id", ""),
+                    "bias_type": bias_type,
+                    "target": item.get("target", ""),
+                    "stereotype_text": stereotype_text,
+                    "anti_stereotype_text": anti_stereotype_text,
+                    "stereotype_score": stereo_score,
+                    "anti_stereotype_score": anti_score,
+                    "chosen_stereotype": chosen_stereotype,
+                    "tie": tie,
+                }
+            )
 
         overall_stereotype_count = sum(1 for r in results if r["chosen_stereotype"])
         total = len(results)

@@ -1,10 +1,16 @@
+from __future__ import annotations
+
 import argparse
 import json
 import logging
 import os
 import subprocess
+from typing import TYPE_CHECKING
 
 from slm_bias_testing.registry import MODELS, get_model
+
+if TYPE_CHECKING:
+    from slm_bias_testing.benchmarks import BaseBenchmark
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +82,9 @@ def run_benchmark_for_model(
                 "ollama_tag": ollama_tag,
                 "benchmark": bench,
                 "n_records": len(df) if df is not None else 0,
-                "mean_score": float(df["score"].mean()) if df is not None and not df.empty else None,
+                "mean_score": float(df["score"].mean())
+                if df is not None and not df.empty
+                else None,
                 "std_score": float(df["score"].std()) if df is not None and not df.empty else None,
             }
         else:
@@ -86,18 +94,23 @@ def run_benchmark_for_model(
 
             if bench == "stereoset":
                 from slm_bias_testing.benchmarks.stereoset import StereoSetBenchmark
-                bm = StereoSetBenchmark()
+
+                bm: BaseBenchmark = StereoSetBenchmark()
             elif bench == "crows-pairs":
                 from slm_bias_testing.benchmarks.crows_pairs import CrowsPairsBenchmark
+
                 bm = CrowsPairsBenchmark()
             elif bench == "bbq":
                 from slm_bias_testing.benchmarks.bbq import BBQBiasBenchmark
+
                 bm = BBQBiasBenchmark()
             elif bench == "demographic-bias":
                 from slm_bias_testing.benchmarks.demographic_bias import DemographicBiasBenchmark
+
                 bm = DemographicBiasBenchmark()
             elif bench == "winobias":
                 from slm_bias_testing.benchmarks.winobias import WinoBiasBenchmark
+
                 bm = WinoBiasBenchmark()
             else:
                 logger.error("Unknown benchmark: %s", bench)
@@ -144,7 +157,9 @@ def main() -> None:
     )
     parser.add_argument("--output-dir", default="results", help="Base output directory")
     parser.add_argument("--timeout", type=int, default=1800, help="Per-model timeout in seconds")
-    parser.add_argument("--max-samples", type=int, default=None, help="Max samples per benchmark (for testing)")
+    parser.add_argument(
+        "--max-samples", type=int, default=None, help="Max samples per benchmark (for testing)"
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
