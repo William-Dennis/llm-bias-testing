@@ -76,13 +76,17 @@ for model in "${MODELS[@]}"; do
         log "RUN $model/$bench ..."
         health_check
 
-        # Run the benchmark with a per-model timeout of 1hr
-        if timeout 3600 uv run python -m slm_bias_testing.runner \
+        # Run the benchmark with a per-model timeout of 1hr (macOS-compatible)
+        opts=()
+        if [ -n "$MAX_SAMPLES" ]; then
+            opts+=(--max-samples "$MAX_SAMPLES")
+        fi
+        if perl -e 'alarm 3600; exec @ARGV' uv run python -m slm_bias_testing.runner \
             "$model" \
             --benchmark "$bench" \
             --output-dir "$RESULTS_DIR" \
             --timeout "$TIMEOUT" \
-            $MAX_SAMPLES \
+            "${opts[@]}" \
             >> "$LOG" 2>&1; then
             log "DONE $model/$bench"
             ((completed++)) || true
@@ -107,8 +111,8 @@ if [ "$completed" -gt 0 ]; then
     # Push any local commits first (from earlier sessions that didn't push)
     git push origin main 2>>"$LOG" || true
 
-    # Stage new results
-    git add results/ >> "$LOG" 2>&1
+    # Stage new results (only JSON, not logs)
+    git add "results/*/*/results.json" >> "$LOG" 2>&1
 
     if ! git diff --cached --quiet; then
         git commit -m "chore: overnight benchmark results $(date +%Y-%m-%d)
