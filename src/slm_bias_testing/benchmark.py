@@ -125,6 +125,15 @@ def run_benchmark(
         max_samples: Max number of CVs to evaluate (None = all)
         n_runs: Number of repeated runs per CV (default 10)
     """
+    if cv_data is None or job_desc is None:
+        # examples/ lives at the repo root, not inside src/. Add it to
+        # sys.path so the import works regardless of the caller's cwd.
+        import sys
+
+        repo_root = str(__import__("pathlib").Path(__file__).resolve().parent.parent.parent)
+        if repo_root not in sys.path:
+            sys.path.insert(0, repo_root)
+
     if cv_data is None:
         from examples.cvs import cvs as cv_data
     if job_desc is None:
