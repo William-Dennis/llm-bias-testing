@@ -77,16 +77,12 @@ for model in "${MODELS[@]}"; do
         health_check
 
         # Run the benchmark with a per-model timeout of 1hr (macOS-compatible)
-        opts=()
+        run_args=("$model" --benchmark "$bench" --output-dir "$RESULTS_DIR" --timeout "$TIMEOUT")
         if [ -n "$MAX_SAMPLES" ]; then
-            opts+=(--max-samples "$MAX_SAMPLES")
+            run_args+=(--max-samples "$MAX_SAMPLES")
         fi
         if perl -e 'alarm 3600; exec @ARGV' uv run python -m slm_bias_testing.runner \
-            "$model" \
-            --benchmark "$bench" \
-            --output-dir "$RESULTS_DIR" \
-            --timeout "$TIMEOUT" \
-            "${opts[@]}" \
+            "${run_args[@]}" \
             >> "$LOG" 2>&1; then
             log "DONE $model/$bench"
             ((completed++)) || true
