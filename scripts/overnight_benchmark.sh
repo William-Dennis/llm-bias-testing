@@ -56,7 +56,7 @@ MODELS=(
 )
 
 BENCHMARKS=("cv-screening" "stereoset" "demographic-bias" "winobias")
-TIMEOUT=1800
+TIMEOUT=21600
 MAX_SAMPLES=""  # full run
 
 completed=0
@@ -81,7 +81,7 @@ for model in "${MODELS[@]}"; do
         if [ -n "$MAX_SAMPLES" ]; then
             run_args+=(--max-samples "$MAX_SAMPLES")
         fi
-        if perl -e 'alarm 3600; exec @ARGV' uv run python -m slm_bias_testing.runner \
+        if perl -e 'alarm 21600; exec @ARGV' uv run python -m slm_bias_testing.runner \
             "${run_args[@]}" \
             >> "$LOG" 2>&1; then
             log "DONE $model/$bench"
