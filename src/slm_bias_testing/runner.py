@@ -44,6 +44,7 @@ def run_benchmark_for_model(
     base_output_dir: str,
     timeout: int,
     max_samples: int | None = None,
+    concurrency: int = 1,
 ) -> None:
     """Run benchmark(s) for a single model with resume support."""
     model_config = get_model(model_name)
@@ -76,6 +77,7 @@ def run_benchmark_for_model(
                 output_dir=results_dir,
                 timeout=timeout,
                 max_samples=max_samples,
+                concurrency=concurrency,
             )
             summary = {
                 "model": model_name,
@@ -161,6 +163,13 @@ def main() -> None:
     parser.add_argument(
         "--max-samples", type=int, default=None, help="Max samples per benchmark (for testing)"
     )
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=1,
+        help="Concurrent prediction threads for cv-screening (default: 1). "
+        "Set OLLAMA_NUM_PARALLEL on the server to match.",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
@@ -172,7 +181,12 @@ def main() -> None:
 
     for model_name in args.models:
         run_benchmark_for_model(
-            model_name, args.benchmark, args.output_dir, args.timeout, args.max_samples
+            model_name,
+            args.benchmark,
+            args.output_dir,
+            args.timeout,
+            args.max_samples,
+            args.concurrency,
         )
 
 
