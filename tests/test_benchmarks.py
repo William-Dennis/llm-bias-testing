@@ -1,6 +1,8 @@
 import tempfile
 from unittest.mock import patch
 
+import pytest
+
 from slm_bias_testing.benchmarks import BaseBenchmark
 from slm_bias_testing.benchmarks.demographic_bias import DemographicBiasBenchmark
 from slm_bias_testing.benchmarks.stereoset import StereoSetBenchmark
@@ -226,6 +228,7 @@ class TestStereoSetBenchmark:
 
 
 class TestWinoBiasBenchmark:
+    @pytest.mark.integration
     def test_load_dataset(self):
         bm = WinoBiasBenchmark()
         data = bm.load_dataset()
@@ -233,6 +236,7 @@ class TestWinoBiasBenchmark:
         configs = set(d["config"] for d in data)
         assert configs == {"type1_pro", "type1_anti", "type2_pro", "type2_anti"}
 
+    @pytest.mark.integration
     def test_occupations_set(self):
         bm = WinoBiasBenchmark()
         bm.load_dataset()
@@ -241,6 +245,7 @@ class TestWinoBiasBenchmark:
         assert "nurse" in occ
         assert len(occ) == 40
 
+    @pytest.mark.integration
     def test_entity_extraction(self):
         bm = WinoBiasBenchmark()
         data = bm.load_dataset()
